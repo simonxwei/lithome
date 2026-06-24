@@ -2,7 +2,7 @@ package io.github.simonxwei.lithome;
 
 import net.fabricmc.api.ModInitializer;
 
-public class LithomeMod implements ModInitializer {
+public final class LithomeMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
