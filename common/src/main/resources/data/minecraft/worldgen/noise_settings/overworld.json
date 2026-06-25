@@ -503,7 +503,7 @@
                                                 "type": "minecraft:not",
                                                 "invert": {
                                                     "type": "lithome:steep",
-                                                    "height": 3
+                                                    "height": 4
                                                 }
                                             },
                                             "then_run": {
