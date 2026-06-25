@@ -704,71 +704,6 @@
                         {
                             "type": "minecraft:condition",
                             "if_true": {
-                                "type": "minecraft:stone_depth",
-                                "add_surface_depth": true,
-                                "offset": 0,
-                                "secondary_depth_range": 0,
-                                "surface_type": "floor"
-                            },
-                            "then_run": {
-                                "type": "minecraft:condition",
-                                "if_true": {
-                                    "type": "minecraft:not",
-                                    "invert": {
-                                        "type": "minecraft:biome",
-                                        "biome_is": [
-                                            "minecraft:badlands",
-                                            "minecraft:eroded_badlands",
-                                            "minecraft:wooded_badlands"
-                                        ]
-                                    }
-                                },
-                                "then_run": {
-                                    "type": "minecraft:condition",
-                                    "if_true": {
-                                        "type": "lithome:steep",
-                                        "height": 4
-                                    },
-                                    "then_run": {
-                                        "type": "minecraft:sequence",
-                                        "sequence": [
-                                            {
-                                                "type": "minecraft:condition",
-                                                "if_true": {
-                                                    "type": "minecraft:biome",
-                                                    "biome_is": "minecraft:frozen_peaks"
-                                                },
-                                                "then_run": {
-                                                    "type": "minecraft:block",
-                                                    "result_state": {
-                                                        "Name": "minecraft:packed_ice"
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                "type": "minecraft:condition",
-                                                "if_true": {
-                                                    "type": "minecraft:biome",
-                                                    "biome_is": "minecraft:desert"
-                                                },
-                                                "then_run": {
-                                                    "type": "minecraft:block",
-                                                    "result_state": {
-                                                        "Name": "minecraft:sandstone"
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                "type": "lithome:skip"
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "type": "minecraft:condition",
-                            "if_true": {
                                 "type": "minecraft:biome",
                                 "biome_is": [
                                     "minecraft:badlands",
@@ -779,6 +714,52 @@
                             "then_run": {
                                 "type": "minecraft:sequence",
                                 "sequence": [
+                                    {
+                                        "type": "minecraft:condition",
+                                        "if_true": {
+                                            "type": "minecraft:stone_depth",
+                                            "add_surface_depth": true,
+                                            "offset": 0,
+                                            "secondary_depth_range": 0,
+                                            "surface_type": "floor"
+                                        },
+                                        "then_run": {
+                                            "type": "minecraft:condition",
+                                            "if_true": {
+                                                "type": "minecraft:water",
+                                                "add_stone_depth": false,
+                                                "offset": -1,
+                                                "surface_depth_multiplier": 0
+                                            },
+                                            "then_run": {
+                                                "type": "minecraft:condition",
+                                                "if_true": {
+                                                    "type": "minecraft:not",
+                                                    "invert": {
+                                                        "type": "minecraft:y_above",
+                                                        "add_stone_depth": true,
+                                                        "anchor": {
+                                                            "absolute": 74
+                                                        },
+                                                        "surface_depth_multiplier": 1
+                                                    }
+                                                },
+                                                "then_run": {
+                                                    "type": "minecraft:condition",
+                                                    "if_true": {
+                                                        "type": "lithome:steep",
+                                                        "height": 4
+                                                    },
+                                                    "then_run": {
+                                                        "type": "minecraft:block",
+                                                        "result_state": {
+                                                            "Name": "minecraft:red_sandstone"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
                                     {
                                         "type": "minecraft:condition",
                                         "if_true": {
@@ -1041,6 +1022,57 @@
                                         }
                                     }
                                 ]
+                            }
+                        },
+                        {
+                            "type": "minecraft:condition",
+                            "if_true": {
+                                "type": "minecraft:stone_depth",
+                                "add_surface_depth": true,
+                                "offset": 0,
+                                "secondary_depth_range": 0,
+                                "surface_type": "floor"
+                            },
+                            "then_run": {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                    "type": "lithome:steep",
+                                    "height": 4
+                                },
+                                "then_run": {
+                                    "type": "minecraft:sequence",
+                                    "sequence": [
+                                        {
+                                            "type": "minecraft:condition",
+                                            "if_true": {
+                                                "type": "minecraft:biome",
+                                                "biome_is": "minecraft:frozen_peaks"
+                                            },
+                                            "then_run": {
+                                                "type": "minecraft:block",
+                                                "result_state": {
+                                                    "Name": "minecraft:packed_ice"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "type": "minecraft:condition",
+                                            "if_true": {
+                                                "type": "minecraft:biome",
+                                                "biome_is": "minecraft:desert"
+                                            },
+                                            "then_run": {
+                                                "type": "minecraft:block",
+                                                "result_state": {
+                                                    "Name": "minecraft:sandstone"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "type": "lithome:skip"
+                                        }
+                                    ]
+                                }
                             }
                         },
                         {
