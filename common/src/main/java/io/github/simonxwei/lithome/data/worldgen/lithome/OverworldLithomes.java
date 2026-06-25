@@ -5,7 +5,7 @@ import net.minecraft.world.level.block.Blocks;
 
 public final class OverworldLithomes {
 
-    public OverworldLithomes() {}
+    private OverworldLithomes() {}
 
     public static Lithome andesite() {
         return new Lithome(Blocks.ANDESITE.defaultBlockState());

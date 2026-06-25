@@ -1,18 +1,19 @@
 {
-  "required": true,
-  "minVersion": "0.8",
-  "package": "io.github.simonxwei.lithome.mixin",
-  "compatibilityLevel": "JAVA_25",
-  "mixins": [
-    "NoiseBasedChunkGeneratorMixin",
-    "SurfaceSystemMixin"
-  ],
-  "client": [],
-  "server": [],
-  "injectors": {
-    "defaultRequire": 1
-  },
-  "overwrites": {
-    "requireAnnotations": true
+    "required": true,
+    "minVersion": "0.8",
+    "package": "io.github.simonxwei.lithome.mixin",
+    "compatibilityLevel": "JAVA_25",
+    "mixins": [
+        "NoiseBasedChunkGeneratorMixin",
+        "SurfaceRulesContextAccessor",
+        "SurfaceSystemMixin"
+    ],
+    "client": [],
+    "server": [],
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "overwrites": {
+        "requireAnnotations": true
   }
 }

@@ -1,5 +1,6 @@
 package io.github.simonxwei.lithome;
 
+import io.github.simonxwei.lithome.world.level.levelgen.LithomeSurfaceRules;
 import net.fabricmc.api.ModInitializer;
 
 public final class LithomeMod implements ModInitializer {
@@ -14,5 +15,7 @@ public final class LithomeMod implements ModInitializer {
         // Use Fabric to bootstrap the Common mod.
         Constants.LOG.info("Hello Fabric world!");
         CommonClass.init();
+
+        LithomeSurfaceRules.init();
     }
 }
