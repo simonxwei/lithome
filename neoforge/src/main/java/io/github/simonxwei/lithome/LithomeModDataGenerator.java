@@ -6,7 +6,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 @EventBusSubscriber(modid = Constants.MOD_ID)
-public final class LithomeDataGenerator {
+public final class LithomeModDataGenerator {
 
     @SubscribeEvent
     public static void gatherData(final GatherDataEvent.Client event) {

@@ -1,6 +1,7 @@
 package io.github.simonxwei.lithome.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import io.github.simonxwei.lithome.data.worldgen.lithome.OverworldLithomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
@@ -12,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class NoiseBasedChunkGeneratorMixin {
 
     @ModifyReturnValue(method = "debugPreliminarySurfaceLevel", at = @At("RETURN"))
-    private BlockState debugPreliminarySurfaceLevelMixin(
+    private BlockState lithome$debugPreliminarySurfaceLevelMixin(
             final BlockState original,
             final NoiseChunk noiseChunk,
             final int posX,
@@ -21,6 +22,6 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             final BlockState state
     ) {
         if (!original.is(Blocks.STONE)) return original;
-        return Blocks.ANDESITE.defaultBlockState();
+        return OverworldLithomes.andesite().getBaseRock();
     }
 }

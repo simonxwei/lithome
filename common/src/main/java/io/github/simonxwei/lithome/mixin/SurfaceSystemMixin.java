@@ -21,7 +21,7 @@ public abstract class SurfaceSystemMixin {
                     opcode = Opcodes.GETFIELD
             )
     )
-    private BlockState erosion$wrapDefaultBlockCheck(final SurfaceSystem instance, final Operation<BlockState> original, final @Local(name = "old") BlockState old) {
+    private BlockState lithome$buildSurfaceMixin(final SurfaceSystem instance, final Operation<BlockState> original, final @Local(name = "old") BlockState old) {
         return old.is(LithomeBlockTags.BASE_STONE_OVERWORLD) ? old : original.call(instance);
     }
 }

@@ -19,7 +19,7 @@
             "io.github.simonxwei.lithome.LithomeMod"
         ],
         "fabric-datagen": [
-            "io.github.simonxwei.lithome.LithomeDataGenerator"
+            "io.github.simonxwei.lithome.LithomeModDataGenerator"
         ]
     },
     "mixins": [

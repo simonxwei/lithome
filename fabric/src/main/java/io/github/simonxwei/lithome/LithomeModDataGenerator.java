@@ -7,7 +7,7 @@ import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
 
 @Environment(EnvType.CLIENT)
-public final class LithomeDataGenerator implements DataGeneratorEntrypoint {
+public final class LithomeModDataGenerator implements DataGeneratorEntrypoint {
 
     @Override
     public void onInitializeDataGenerator(final FabricDataGenerator fabricDataGenerator) {
