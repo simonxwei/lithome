@@ -22,8 +22,8 @@ public record Skip() implements SurfaceRules.RuleSource {
     @Override
     public SurfaceRules.SurfaceRule apply(final SurfaceRules.Context context) {
         final SurfaceRulesContextAccessor accessor = (SurfaceRulesContextAccessor) (Object) context;
-        final ChunkAccess chunk = accessor.getChunk();
-        final BlockPos.MutableBlockPos pos = accessor.getPos();
+        final ChunkAccess chunk = accessor.lithome$getChunk();
+        final BlockPos.MutableBlockPos pos = accessor.lithome$getPos();
         return (blockX, blockY, blockZ) -> chunk.getBlockState(pos.set(blockX, blockY, blockZ));
     }
 

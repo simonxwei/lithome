@@ -13,6 +13,6 @@ public abstract class LithomeLazyXZCondition extends LithomeLazyCondition {
 
     @Override
     protected long getContextLastUpdate() {
-        return ((SurfaceRulesContextAccessor) (Object) this.context).getLastUpdateXZ();
+        return ((SurfaceRulesContextAccessor) (Object) this.context).lithome$getLastUpdateXZ();
     }
 }

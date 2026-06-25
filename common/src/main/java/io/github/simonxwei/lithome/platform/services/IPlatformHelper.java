@@ -15,7 +15,7 @@ public interface IPlatformHelper {
      * @param modId The mod to check if it is loaded.
      * @return True if the mod is loaded, false otherwise.
      */
-    boolean isModLoaded(String modId);
+    boolean isModLoaded(final String modId);
 
     /**
      * Check if the game is currently in a development environment.
@@ -30,7 +30,6 @@ public interface IPlatformHelper {
      * @return The name of the environment type.
      */
     default String getEnvironmentName() {
-
         return isDevelopmentEnvironment() ? "development" : "production";
     }
 }

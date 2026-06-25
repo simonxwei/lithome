@@ -727,10 +727,28 @@
                                     "type": "minecraft:condition",
                                     "if_true": {
                                         "type": "lithome:steep",
-                                        "height": 3
+                                        "height": 4
                                     },
                                     "then_run": {
-                                        "type": "lithome:skip"
+                                        "type": "minecraft:sequence",
+                                        "sequence": [
+                                            {
+                                                "type": "minecraft:condition",
+                                                "if_true": {
+                                                    "type": "minecraft:biome",
+                                                    "biome_is": "minecraft:frozen_peaks"
+                                                },
+                                                "then_run": {
+                                                    "type": "minecraft:block",
+                                                    "result_state": {
+                                                        "Name": "minecraft:packed_ice"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "type": "lithome:skip"
+                                            }
+                                        ]
                                     }
                                 }
                             }
@@ -1104,18 +1122,6 @@
                                                             {
                                                                 "type": "minecraft:condition",
                                                                 "if_true": {
-                                                                    "type": "minecraft:steep"
-                                                                },
-                                                                "then_run": {
-                                                                    "type": "minecraft:block",
-                                                                    "result_state": {
-                                                                        "Name": "minecraft:packed_ice"
-                                                                    }
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "minecraft:condition",
-                                                                "if_true": {
                                                                     "type": "minecraft:noise_threshold",
                                                                     "max_threshold": 0.2,
                                                                     "min_threshold": 0.0,
@@ -1173,15 +1179,6 @@
                                                             {
                                                                 "type": "minecraft:condition",
                                                                 "if_true": {
-                                                                    "type": "minecraft:steep"
-                                                                },
-                                                                "then_run": {
-                                                                    "type": "lithome:skip"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "minecraft:condition",
-                                                                "if_true": {
                                                                     "type": "minecraft:noise_threshold",
                                                                     "max_threshold": 0.6,
                                                                     "min_threshold": 0.35,
@@ -1228,33 +1225,19 @@
                                                         "biome_is": "minecraft:jagged_peaks"
                                                     },
                                                     "then_run": {
-                                                        "type": "minecraft:sequence",
-                                                        "sequence": [
-                                                            {
-                                                                "type": "minecraft:condition",
-                                                                "if_true": {
-                                                                    "type": "minecraft:steep"
-                                                                },
-                                                                "then_run": {
-                                                                    "type": "lithome:skip"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "minecraft:condition",
-                                                                "if_true": {
-                                                                    "type": "minecraft:water",
-                                                                    "add_stone_depth": false,
-                                                                    "offset": 0,
-                                                                    "surface_depth_multiplier": 0
-                                                                },
-                                                                "then_run": {
-                                                                    "type": "minecraft:block",
-                                                                    "result_state": {
-                                                                        "Name": "minecraft:snow_block"
-                                                                    }
-                                                                }
+                                                        "type": "minecraft:condition",
+                                                        "if_true": {
+                                                            "type": "minecraft:water",
+                                                            "add_stone_depth": false,
+                                                            "offset": 0,
+                                                            "surface_depth_multiplier": 0
+                                                        },
+                                                        "then_run": {
+                                                            "type": "minecraft:block",
+                                                            "result_state": {
+                                                                "Name": "minecraft:snow_block"
                                                             }
-                                                        ]
+                                                        }
                                                     }
                                                 },
                                                 {
@@ -1922,18 +1905,6 @@
                                                             {
                                                                 "type": "minecraft:condition",
                                                                 "if_true": {
-                                                                    "type": "minecraft:steep"
-                                                                },
-                                                                "then_run": {
-                                                                    "type": "minecraft:block",
-                                                                    "result_state": {
-                                                                        "Name": "minecraft:packed_ice"
-                                                                    }
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "minecraft:condition",
-                                                                "if_true": {
                                                                     "type": "minecraft:noise_threshold",
                                                                     "max_threshold": 0.2,
                                                                     "min_threshold": -0.5,
@@ -1991,15 +1962,6 @@
                                                             {
                                                                 "type": "minecraft:condition",
                                                                 "if_true": {
-                                                                    "type": "minecraft:steep"
-                                                                },
-                                                                "then_run": {
-                                                                    "type": "lithome:skip"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "minecraft:condition",
-                                                                "if_true": {
                                                                     "type": "minecraft:noise_threshold",
                                                                     "max_threshold": 0.58,
                                                                     "min_threshold": 0.45,
@@ -2037,16 +1999,6 @@
                                                                 }
                                                             }
                                                         ]
-                                                    }
-                                                },
-                                                {
-                                                    "type": "minecraft:condition",
-                                                    "if_true": {
-                                                        "type": "minecraft:biome",
-                                                        "biome_is": "minecraft:jagged_peaks"
-                                                    },
-                                                    "then_run": {
-                                                        "type": "lithome:skip"
                                                     }
                                                 },
                                                 {

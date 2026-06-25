@@ -10,17 +10,17 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface SurfaceRulesContextAccessor {
 
     @Accessor("chunk")
-    ChunkAccess getChunk();
+    ChunkAccess lithome$getChunk();
 
     @Accessor("lastUpdateXZ")
-    long getLastUpdateXZ();
+    long lithome$getLastUpdateXZ();
 
     @Accessor("blockX")
-    int getBlockX();
+    int lithome$getBlockX();
 
     @Accessor("blockZ")
-    int getBlockZ();
+    int lithome$getBlockZ();
 
     @Accessor("pos")
-    BlockPos.MutableBlockPos getPos();
+    BlockPos.MutableBlockPos lithome$getPos();
 }

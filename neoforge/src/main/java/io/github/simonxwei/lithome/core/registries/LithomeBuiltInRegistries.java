@@ -42,7 +42,7 @@ public final class LithomeBuiltInRegistries {
     // interface
 
     @FunctionalInterface
-    public interface DeferredRegisterBootstrap<T> {
+    private interface DeferredRegisterBootstrap<T> {
 
         void run(DeferredRegister<T> deferredRegister);
     }

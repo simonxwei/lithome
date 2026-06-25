@@ -21,9 +21,9 @@ public final class LithomeSteepCondition extends LithomeLazyXZCondition {
     @Override
     protected boolean compute() {
         final SurfaceRulesContextAccessor accessor = (SurfaceRulesContextAccessor) (Object) this.context;
-        final ChunkAccess chunk = accessor.getChunk();
-        final int chunkBlockX = accessor.getBlockX() & 15;
-        final int chunkBlockZ = accessor.getBlockZ() & 15;
+        final ChunkAccess chunk = accessor.lithome$getChunk();
+        final int chunkBlockX = accessor.lithome$getBlockX() & 15;
+        final int chunkBlockZ = accessor.lithome$getBlockZ() & 15;
         final int zNorth = Math.max(chunkBlockZ - 1, 0);
         final int zSouth = Math.min(chunkBlockZ + 1, 15);
         final int heightNorth = chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, chunkBlockX, zNorth);
