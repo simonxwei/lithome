@@ -1,17 +1,19 @@
 package io.github.simonxwei.lithome.world.level.lithome;
 
+import net.minecraft.core.Holder;
+
 public final class FixedLithomeSource extends LithomeSource {
 
-    private final Lithome lithome;
+    private final Holder<Lithome> lithome;
 
-    public FixedLithomeSource(final Lithome lithome) {
+    public FixedLithomeSource(final Holder<Lithome> lithome) {
         this.lithome = lithome;
     }
 
     // lithome resolver interface
 
     @Override
-    public Lithome getNoiseLithome(final int quartX, final int quartY, final int quartZ) {
+    public Holder<Lithome> getNoiseLithome(final int quartX, final int quartY, final int quartZ) {
         return this.lithome;
     }
 }
