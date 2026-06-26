@@ -8,8 +8,7 @@ public final class Constants {
 
     public static final String MOD_ID = "lithome";
     public static final String MOD_NAME = "Lithome";
-
-    public static final Logger LOG;
+    public static final Logger LOGGER;
 
     private Constants() {}
 
@@ -20,6 +19,6 @@ public final class Constants {
     }
 
     static {
-        LOG = LoggerFactory.getLogger(MOD_NAME);
+        LOGGER = LoggerFactory.getLogger(MOD_NAME);
     }
 }

@@ -9,12 +9,12 @@ import net.minecraft.world.level.levelgen.SurfaceRules;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-public final class LithomeBuiltInRegistries {
+public final class LithomeBuiltInDeferredRegistries {
 
     public static final DeferredRegister<MapCodec<? extends SurfaceRules.ConditionSource>> MATERIAL_CONDITION;
     public static final DeferredRegister<MapCodec<? extends SurfaceRules.RuleSource>> MATERIAL_RULES;
 
-    private LithomeBuiltInRegistries() {}
+    private LithomeBuiltInDeferredRegistries() {}
 
     // public
 
@@ -23,7 +23,7 @@ public final class LithomeBuiltInRegistries {
         MATERIAL_CONDITION.register(modBus);
         MATERIAL_RULES.register(modBus);
 
-        Constants.LOG.debug("Initialized builtin registries");
+        Constants.LOGGER.debug("Initialized builtin registries");
     }
 
     // core

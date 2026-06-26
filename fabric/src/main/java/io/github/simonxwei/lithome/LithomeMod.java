@@ -13,6 +13,6 @@ public final class LithomeMod implements ModInitializer {
         LithomeSurfaceRules.init();
         CommonClass.init();
 
-        Constants.LOG.info("Hello Fabric world!");
+        Constants.LOGGER.info("Hello Fabric world!");
     }
 }

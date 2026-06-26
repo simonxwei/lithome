@@ -14,7 +14,7 @@ public final class LithomeBlockTags {
     // public
 
     public static void init() {
-        Constants.LOG.debug("Initialized block tags");
+        Constants.LOGGER.debug("Initialized block tags");
     }
 
     // core

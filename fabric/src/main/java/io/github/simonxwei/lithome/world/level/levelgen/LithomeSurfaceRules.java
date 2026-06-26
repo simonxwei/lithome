@@ -18,7 +18,7 @@ public final class LithomeSurfaceRules {
         // rule
         registerRule("skip", Skip.CODEC);
 
-        Constants.LOG.debug("Initialized surface rules");
+        Constants.LOGGER.debug("Initialized surface rules");
     }
 
     // core
