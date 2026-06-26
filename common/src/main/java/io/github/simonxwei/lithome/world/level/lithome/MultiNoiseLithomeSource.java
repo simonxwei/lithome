@@ -1,26 +1,62 @@
 package io.github.simonxwei.lithome.world.level.lithome;
 
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.Lifecycle;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Climate;
+
+import java.util.Optional;
 
 public final class MultiNoiseLithomeSource extends LithomeSource {
 
     private static final MapCodec<Holder<Lithome>> ENTRY_CODEC;
 
     public static final MapCodec<Climate.ParameterList<Holder<Lithome>>> DIRECT_CODEC;
+    private static final MapCodec<Holder<MultiNoiseLithomeSourceParameterList>> PRESET_CODEC;
     public static final MapCodec<MultiNoiseLithomeSource> CODEC;
 
-    private final Climate.ParameterList<Holder<Lithome>> parameters;
+    private final Either<
+            Climate.ParameterList<Holder<Lithome>>,
+            Holder<MultiNoiseLithomeSourceParameterList>
+            > parameters;
 
-    public MultiNoiseLithomeSource(
-            final Climate.ParameterList<Holder<Lithome>> parameters
+    private MultiNoiseLithomeSource(
+            final Either<
+                    Climate.ParameterList<Holder<Lithome>>,
+                    Holder<MultiNoiseLithomeSourceParameterList>
+                    > parameters
     ) {
         this.parameters = parameters;
     }
 
-    public Climate.ParameterList<Holder<Lithome>> parameters() {
-        return this.parameters;
+    public static MultiNoiseLithomeSource createFromList(
+            final Climate.ParameterList<Holder<Lithome>> parameters
+    ) {
+        return new MultiNoiseLithomeSource(Either.left(parameters));
+    }
+
+    public static MultiNoiseLithomeSource createFromPreset(
+            final Holder<MultiNoiseLithomeSourceParameterList> preset
+    ) {
+        return new MultiNoiseLithomeSource(Either.right(preset));
+    }
+
+    private Climate.ParameterList<Holder<Lithome>> parameters() {
+        return this.parameters.map(
+                direct -> direct,
+                preset -> preset.value().parameters()
+        );
+    }
+
+    public boolean stable(
+            final ResourceKey<MultiNoiseLithomeSourceParameterList> expected
+    ) {
+        final Optional<Holder<MultiNoiseLithomeSourceParameterList>> preset =
+                this.parameters.right();
+        return preset.isPresent() && preset.get().is(expected);
     }
 
     @Override
@@ -35,7 +71,7 @@ public final class MultiNoiseLithomeSource extends LithomeSource {
             final int quartZ,
             final Climate.Sampler sampler
     ) {
-        return this.parameters.findValue(
+        return this.parameters().findValue(
                 sampler.sample(quartX, quartY, quartZ)
         );
     }
@@ -45,8 +81,10 @@ public final class MultiNoiseLithomeSource extends LithomeSource {
         DIRECT_CODEC = Climate.ParameterList
                 .codec(ENTRY_CODEC)
                 .fieldOf("lithomes");
-        CODEC = DIRECT_CODEC
-                .xmap(MultiNoiseLithomeSource::new, MultiNoiseLithomeSource::parameters)
-                .stable();
+        PRESET_CODEC = MultiNoiseLithomeSourceParameterList.CODEC
+                .fieldOf("preset")
+                .withLifecycle(Lifecycle.stable());
+        CODEC = Codec.mapEither(DIRECT_CODEC, PRESET_CODEC)
+                .xmap(MultiNoiseLithomeSource::new, source -> source.parameters);
     }
 }

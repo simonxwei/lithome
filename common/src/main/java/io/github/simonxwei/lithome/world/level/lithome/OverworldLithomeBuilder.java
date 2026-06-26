@@ -1,10 +1,11 @@
 package io.github.simonxwei.lithome.world.level.lithome;
 
 import com.mojang.datafixers.util.Pair;
-import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Climate;
 
 import java.util.List;
+import java.util.function.Function;
 
 public final class OverworldLithomeBuilder {
 
@@ -21,15 +22,22 @@ public final class OverworldLithomeBuilder {
     private OverworldLithomeBuilder() {
     }
 
-    public static Climate.ParameterList<Holder<Lithome>> createTestParameters(
-            final Holder<Lithome> deepslate,
-            final Holder<Lithome> andesite,
-            final Holder<Lithome> granite
+    public static <T> Climate.ParameterList<T> createTestParameters(
+            final Function<ResourceKey<Lithome>, T> lookup
     ) {
         return new Climate.ParameterList<>(List.of(
-                Pair.of(parameterPoint(COLD_TEMPERATURE), deepslate),
-                Pair.of(parameterPoint(TEMPERATE_TEMPERATURE), andesite),
-                Pair.of(parameterPoint(WARM_TEMPERATURE), granite)
+                Pair.of(
+                        parameterPoint(COLD_TEMPERATURE),
+                        lookup.apply(Lithomes.DEEPSLATE)
+                ),
+                Pair.of(
+                        parameterPoint(TEMPERATE_TEMPERATURE),
+                        lookup.apply(Lithomes.ANDESITE)
+                ),
+                Pair.of(
+                        parameterPoint(WARM_TEMPERATURE),
+                        lookup.apply(Lithomes.GRANITE)
+                )
         ));
     }
 
