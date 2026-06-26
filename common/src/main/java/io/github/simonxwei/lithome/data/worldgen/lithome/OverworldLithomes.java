@@ -15,4 +15,12 @@ public final class OverworldLithomes {
     public static Lithome andesite() {
         return new Lithome(Blocks.ANDESITE.defaultBlockState());
     }
+
+    public static Lithome granite() {
+        return new Lithome(Blocks.GRANITE.defaultBlockState());
+    }
+
+    public static Lithome deepslate() {
+        return new Lithome(Blocks.DEEPSLATE.defaultBlockState());
+    }
 }

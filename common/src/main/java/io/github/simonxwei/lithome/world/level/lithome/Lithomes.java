@@ -8,6 +8,8 @@ public final class Lithomes {
 
     public static final ResourceKey<Lithome> STONE;
     public static final ResourceKey<Lithome> ANDESITE;
+    public static final ResourceKey<Lithome> GRANITE;
+    public static final ResourceKey<Lithome> DEEPSLATE;
 
     private Lithomes() {
     }
@@ -19,5 +21,7 @@ public final class Lithomes {
     static {
         STONE = register("stone");
         ANDESITE = register("andesite");
+        GRANITE = register("granite");
+        DEEPSLATE = register("deepslate");
     }
 }

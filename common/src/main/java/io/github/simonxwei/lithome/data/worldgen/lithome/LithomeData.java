@@ -12,5 +12,7 @@ public final class LithomeData {
     public static void bootstrap(final BootstrapContext<Lithome> context) {
         context.register(Lithomes.STONE, OverworldLithomes.stone());
         context.register(Lithomes.ANDESITE, OverworldLithomes.andesite());
+        context.register(Lithomes.GRANITE, OverworldLithomes.granite());
+        context.register(Lithomes.DEEPSLATE, OverworldLithomes.deepslate());
     }
 }

@@ -6,11 +6,21 @@ import net.minecraft.core.Registry;
 
 public final class LithomeSources {
 
-    private LithomeSources() {}
+    private LithomeSources() {
+    }
 
-    // public
-
-    public static MapCodec<? extends LithomeSource> bootstrap(final Registry<MapCodec<? extends LithomeSource>> registry) {
-        return Registry.register(registry, Constants.id("fixed"), FixedLithomeSource.CODEC);
+    public static MapCodec<? extends LithomeSource> bootstrap(
+            final Registry<MapCodec<? extends LithomeSource>> registry
+    ) {
+        Registry.register(
+                registry,
+                Constants.id("fixed"),
+                FixedLithomeSource.CODEC
+        );
+        return Registry.register(
+                registry,
+                Constants.id("multi_noise"),
+                MultiNoiseLithomeSource.CODEC
+        );
     }
 }
