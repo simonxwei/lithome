@@ -6,17 +6,18 @@ import net.minecraft.resources.ResourceKey;
 
 public final class Lithomes {
 
+    public static final ResourceKey<Lithome> STONE;
     public static final ResourceKey<Lithome> ANDESITE;
 
-    private Lithomes() {}
-
-    // core
+    private Lithomes() {
+    }
 
     private static ResourceKey<Lithome> register(final String name) {
         return ResourceKey.create(LithomeRegistries.LITHOME, Constants.id(name));
     }
 
     static {
+        STONE = register("stone");
         ANDESITE = register("andesite");
     }
 }

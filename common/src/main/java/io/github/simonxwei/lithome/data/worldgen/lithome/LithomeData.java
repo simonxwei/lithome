@@ -6,11 +6,11 @@ import net.minecraft.data.worldgen.BootstrapContext;
 
 public final class LithomeData {
 
-    private LithomeData() {}
-
-    // public
+    private LithomeData() {
+    }
 
     public static void bootstrap(final BootstrapContext<Lithome> context) {
+        context.register(Lithomes.STONE, OverworldLithomes.stone());
         context.register(Lithomes.ANDESITE, OverworldLithomes.andesite());
     }
 }

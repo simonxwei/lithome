@@ -1,0 +1,9 @@
+{
+  "values": [
+    {
+      "id": "#minecraft:base_stone_overworld",
+      "required": false
+    },
+    "minecraft:calcite"
+  ]
+}

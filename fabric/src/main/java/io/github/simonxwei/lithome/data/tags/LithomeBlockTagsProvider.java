@@ -17,6 +17,9 @@ public final class LithomeBlockTagsProvider extends FabricTagsProvider.BlockTags
 
     @Override
     protected void addTags(final HolderLookup.Provider registries) {
+        this.tag(LithomeBlockTags.REPLACEABLE_BASE_ROCKS)
+                .add(BlockItemIds.STONE.block());
+
         this.tag(LithomeBlockTags.BASE_STONE_OVERWORLD)
                 .addOptionalTag(BlockTags.BASE_STONE_OVERWORLD)
                 .add(BlockItemIds.CALCITE.block());

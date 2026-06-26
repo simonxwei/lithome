@@ -2,6 +2,7 @@ package io.github.simonxwei.lithome.world.level.lithome;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.Holder;
+import net.minecraft.world.level.biome.Climate;
 
 public final class FixedLithomeSource extends LithomeSource {
 
@@ -13,21 +14,25 @@ public final class FixedLithomeSource extends LithomeSource {
         this.lithome = lithome;
     }
 
-    // public
-
     @Override
     public MapCodec<FixedLithomeSource> codec() {
         return CODEC;
     }
 
-    // lithome resolver interface
-
     @Override
-    public Holder<Lithome> getNoiseLithome(final int quartX, final int quartY, final int quartZ) {
+    public Holder<Lithome> getNoiseLithome(
+            final int quartX,
+            final int quartY,
+            final int quartZ,
+            final Climate.Sampler sampler
+    ) {
         return this.lithome;
     }
 
     static {
-        CODEC = Lithome.CODEC.fieldOf("lithome").xmap(FixedLithomeSource::new, s -> s.lithome).stable();
+        CODEC = Lithome.CODEC
+                .fieldOf("lithome")
+                .xmap(FixedLithomeSource::new, source -> source.lithome)
+                .stable();
     }
 }

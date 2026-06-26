@@ -55,8 +55,8 @@ public final class LithomeBuiltInRegistries {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> ResourceKey<WritableRegistry<?>> castRootEntryKey(final ResourceKey<? extends Registry<T>> key) {
-        return (ResourceKey<WritableRegistry<?>>) (ResourceKey<?>) key;
+    private static ResourceKey<WritableRegistry<?>> castRootEntryKey(final ResourceKey<?> key) {
+        return (ResourceKey<WritableRegistry<?>>) key;
     }
 
     private static void createContents() {
