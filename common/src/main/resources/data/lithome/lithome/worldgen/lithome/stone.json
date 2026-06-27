@@ -1,5 +1,13 @@
 {
-    "base_rock": {
-        "Name": "minecraft:stone"
-    }
+  "materials": {
+    "type": "lithome:inclusions",
+    "primary": {
+      "Name": "minecraft:stone"
+    },
+    "secondary": {
+      "Name": "minecraft:andesite"
+    },
+    "target_fraction": 0.2,
+    "noise": "lithome:coarse_inclusions"
+  }
 }

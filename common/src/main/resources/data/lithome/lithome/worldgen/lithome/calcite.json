@@ -1,5 +1,8 @@
 {
-  "base_rock": {
-    "Name": "minecraft:calcite"
+  "materials": {
+    "type": "lithome:single",
+    "state": {
+      "Name": "minecraft:calcite"
+    }
   }
 }

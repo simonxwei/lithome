@@ -8,6 +8,8 @@ import net.minecraft.world.level.levelgen.synth.NormalNoise;
 public final class LithomeNoises {
     public static final ResourceKey<NormalNoise.NoiseParameters> MATERIAL = createKey("material");
     public static final ResourceKey<NormalNoise.NoiseParameters> TECTONICS = createKey("tectonics");
+    public static final ResourceKey<NormalNoise.NoiseParameters> COARSE_INCLUSIONS =
+        createKey("coarse_inclusions");
 
     private LithomeNoises() {
     }

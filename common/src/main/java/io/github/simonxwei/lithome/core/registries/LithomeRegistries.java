@@ -5,33 +5,32 @@ import io.github.simonxwei.lithome.Constants;
 import io.github.simonxwei.lithome.world.level.lithome.Lithome;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSource;
 import io.github.simonxwei.lithome.world.level.lithome.MultiNoiseLithomeSourceParameterList;
+import io.github.simonxwei.lithome.world.level.lithome.material.LithomeMaterialSettings;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 
 public final class LithomeRegistries {
-
     public static final Identifier ROOT_REGISTRY_NAME;
-
     public static final ResourceKey<Registry<MapCodec<? extends LithomeSource>>> LITHOME_SOURCE;
+    public static final ResourceKey<Registry<MapCodec<? extends LithomeMaterialSettings>>> LITHOME_MATERIAL_SETTINGS;
     public static final ResourceKey<Registry<Lithome>> LITHOME;
     public static final ResourceKey<Registry<MultiNoiseLithomeSourceParameterList>>
-            MULTI_NOISE_LITHOME_SOURCE_PARAMETER_LIST;
+        MULTI_NOISE_LITHOME_SOURCE_PARAMETER_LIST;
 
     private LithomeRegistries() {
     }
 
-    private static <T> ResourceKey<Registry<T>> createRegistryKey(
-            final String name
-    ) {
+    private static <T> ResourceKey<Registry<T>> createRegistryKey(final String name) {
         return ResourceKey.createRegistryKey(Constants.id(name));
     }
 
     static {
         ROOT_REGISTRY_NAME = Constants.id("root");
         LITHOME_SOURCE = createRegistryKey("worldgen/lithome_source");
+        LITHOME_MATERIAL_SETTINGS = createRegistryKey("worldgen/lithome_material_settings");
         LITHOME = createRegistryKey("worldgen/lithome");
         MULTI_NOISE_LITHOME_SOURCE_PARAMETER_LIST =
-                createRegistryKey("worldgen/multi_noise_lithome_source_parameter_list");
+            createRegistryKey("worldgen/multi_noise_lithome_source_parameter_list");
     }
 }

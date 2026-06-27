@@ -39,10 +39,10 @@ import java.util.Optional;
 public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProvider {
     @Unique
     private static final ResourceKey<NoiseGeneratorSettings> lithome$overworldSettings =
-            ResourceKey.create(
-                    Registries.NOISE_SETTINGS,
-                    Identifier.withDefaultNamespace("overworld")
-            );
+        ResourceKey.create(
+            Registries.NOISE_SETTINGS,
+            Identifier.withDefaultNamespace("overworld")
+        );
 
     @Shadow
     @Final
@@ -55,113 +55,104 @@ public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProv
     private volatile LithomeSamplerCache lithome$samplerCache;
 
     @WrapOperation(
-            method = "doCreateBiomes",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/level/chunk/ChunkAccess;fillBiomesFromNoise(Lnet/minecraft/world/level/biome/BiomeResolver;Lnet/minecraft/world/level/biome/Climate$Sampler;)V"
-            )
+        method = "doCreateBiomes",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/level/chunk/ChunkAccess;fillBiomesFromNoise(Lnet/minecraft/world/level/biome/BiomeResolver;Lnet/minecraft/world/level/biome/Climate$Sampler;)V"
+        )
     )
     private void lithome$fillLithomesFromNoise(
-            final ChunkAccess chunk,
-            final BiomeResolver biomeResolver,
-            final Climate.Sampler climateSampler,
-            final Operation<Void> original,
-            final @Local(argsOnly = true) StructureManager structureManager,
-            final @Local(argsOnly = true) RandomState randomState
+        final ChunkAccess chunk,
+        final BiomeResolver biomeResolver,
+        final Climate.Sampler climateSampler,
+        final Operation<Void> original,
+        final @Local(argsOnly = true) StructureManager structureManager,
+        final @Local(argsOnly = true) RandomState randomState
     ) {
         original.call(chunk, biomeResolver, climateSampler);
         this.lithome$getLithomeSource(structureManager.registryAccess())
-                .ifPresent(source -> ((LithomeChunkAccess) (Object) chunk)
-                        .lithome$fillLithomesFromNoise(
-                                source,
-                                this.lithome$getOrCreateSampler(
-                                        randomState,
-                                        climateSampler
-                                )
-                        ));
+            .ifPresent(source -> ((LithomeChunkAccess) (Object) chunk)
+                .lithome$fillLithomesFromNoise(
+                    source,
+                    this.lithome$getOrCreateSampler(randomState, climateSampler)
+                ));
     }
-
 
     @Unique
     private LithomeSampler lithome$getOrCreateSampler(
-            final RandomState randomState,
-            final Climate.Sampler climateSampler
+        final RandomState randomState,
+        final Climate.Sampler climateSampler
     ) {
         LithomeSamplerCache cache = this.lithome$samplerCache;
         if (cache != null && cache.randomState() == randomState) {
             return cache.sampler();
         }
-
         synchronized (this) {
             cache = this.lithome$samplerCache;
             if (cache == null || cache.randomState() != randomState) {
                 cache = new LithomeSamplerCache(
-                        randomState,
-                        LithomeSampler.create(randomState, climateSampler)
+                    randomState,
+                    LithomeSampler.create(randomState, climateSampler)
                 );
                 this.lithome$samplerCache = cache;
             }
         }
-
         return cache.sampler();
     }
 
     @Override
     public Optional<LithomeSource> lithome$getLithomeSource(
-            final RegistryAccess registryAccess
+        final RegistryAccess registryAccess
     ) {
         if (!this.settings.is(lithome$overworldSettings)) {
             return Optional.empty();
         }
-
         LithomeSource source = this.lithome$source;
         if (source != null) {
             return Optional.of(source);
         }
-
         synchronized (this) {
             source = this.lithome$source;
             if (source == null) {
                 final Holder<MultiNoiseLithomeSourceParameterList> preset = registryAccess
-                        .lookupOrThrow(
-                                LithomeRegistries.MULTI_NOISE_LITHOME_SOURCE_PARAMETER_LIST
-                        )
-                        .getOrThrow(MultiNoiseLithomeSourceParameterLists.OVERWORLD);
+                    .lookupOrThrow(
+                        LithomeRegistries.MULTI_NOISE_LITHOME_SOURCE_PARAMETER_LIST
+                    )
+                    .getOrThrow(MultiNoiseLithomeSourceParameterLists.OVERWORLD);
                 source = MultiNoiseLithomeSource.createFromPreset(preset);
                 this.lithome$source = source;
             }
         }
-
         return Optional.of(source);
     }
 
     @Inject(
-            method = "buildSurface(Lnet/minecraft/server/level/WorldGenRegion;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/level/levelgen/NoiseBasedChunkGenerator;buildSurface(Lnet/minecraft/world/level/chunk/ChunkAccess;Lnet/minecraft/world/level/levelgen/WorldGenerationContext;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/biome/BiomeManager;Lnet/minecraft/world/level/levelgen/blending/Blender;Ljava/util/Set;)V"
-            )
+        method = "buildSurface(Lnet/minecraft/server/level/WorldGenRegion;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/level/levelgen/NoiseBasedChunkGenerator;buildSurface(Lnet/minecraft/world/level/chunk/ChunkAccess;Lnet/minecraft/world/level/levelgen/WorldGenerationContext;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/biome/BiomeManager;Lnet/minecraft/world/level/levelgen/blending/Blender;Ljava/util/Set;)V"
+        )
     )
     private void lithome$applyMaterialSystem(
-            final WorldGenRegion region,
-            final StructureManager structureManager,
-            final RandomState randomState,
-            final ChunkAccess chunk,
-            final CallbackInfo ci
+        final WorldGenRegion region,
+        final StructureManager structureManager,
+        final RandomState randomState,
+        final ChunkAccess chunk,
+        final CallbackInfo ci
     ) {
         if (this.settings.is(lithome$overworldSettings)) {
             LithomeMaterialSystem.apply(
-                    region,
-                    chunk,
-                    this.settings.value().defaultBlock()
+                region,
+                chunk,
+                randomState,
+                this.settings.value().defaultBlock()
             );
         }
     }
 
-
     private record LithomeSamplerCache(
-            RandomState randomState,
-            LithomeSampler sampler
+        RandomState randomState,
+        LithomeSampler sampler
     ) {
     }
 }

@@ -1,5 +1,8 @@
 {
-  "base_rock": {
-    "Name": "minecraft:deepslate"
+  "materials": {
+    "type": "lithome:single",
+    "state": {
+      "Name": "minecraft:deepslate"
+    }
   }
 }

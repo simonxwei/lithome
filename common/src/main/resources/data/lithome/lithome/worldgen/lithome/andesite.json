@@ -1,5 +1,8 @@
 {
-  "base_rock": {
-    "Name": "minecraft:andesite"
+  "materials": {
+    "type": "lithome:single",
+    "state": {
+      "Name": "minecraft:andesite"
+    }
   }
 }
