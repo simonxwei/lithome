@@ -1,6 +1,7 @@
 package io.github.simonxwei.lithome.world.level.lithome;
 
 import com.mojang.datafixers.util.Either;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Lifecycle;
 import com.mojang.serialization.MapCodec;
@@ -9,6 +10,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Climate;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public final class MultiNoiseLithomeSource extends LithomeSource {
 
@@ -62,6 +64,11 @@ public final class MultiNoiseLithomeSource extends LithomeSource {
     @Override
     protected MapCodec<MultiNoiseLithomeSource> codec() {
         return CODEC;
+    }
+
+    @Override
+    protected Stream<Holder<Lithome>> collectPossibleLithomes() {
+        return this.parameters().values().stream().map(Pair::getSecond);
     }
 
     @Override

@@ -32,6 +32,10 @@ public final class LithomeManager {
     }
 
     public Holder<Lithome> getLithome(final BlockPos pos) {
+        return this.getLithomeSelection(pos).lithome();
+    }
+
+    public Selection getLithomeSelection(final BlockPos pos) {
         final int absoluteX = pos.getX() - 2;
         final int absoluteY = pos.getY() - 2;
         final int absoluteZ = pos.getZ() - 2;
@@ -63,7 +67,6 @@ public final class LithomeManager {
                     distanceY,
                     distanceZ
             );
-
             if (fiddledDistance < nearestDistance) {
                 nearestCorner = corner;
                 nearestDistance = fiddledDistance;
@@ -73,7 +76,12 @@ public final class LithomeManager {
         final int lithomeX = (nearestCorner & 4) == 0 ? parentX : parentX + 1;
         final int lithomeY = (nearestCorner & 2) == 0 ? parentY : parentY + 1;
         final int lithomeZ = (nearestCorner & 1) == 0 ? parentZ : parentZ + 1;
-        return this.noiseLithomeSource.getNoiseLithome(lithomeX, lithomeY, lithomeZ);
+        return new Selection(
+                lithomeX,
+                lithomeY,
+                lithomeZ,
+                this.noiseLithomeSource.getNoiseLithome(lithomeX, lithomeY, lithomeZ)
+        );
     }
 
     public Holder<Lithome> getNoiseLithomeAtPosition(final BlockPos pos) {
@@ -122,9 +130,16 @@ public final class LithomeManager {
         return (uniform - 0.5D) * 0.9D;
     }
 
+    public record Selection(
+            int quartX,
+            int quartY,
+            int quartZ,
+            Holder<Lithome> lithome
+    ) {
+    }
+
     @FunctionalInterface
     public interface NoiseLithomeSource {
-
         Holder<Lithome> getNoiseLithome(int quartX, int quartY, int quartZ);
     }
 }

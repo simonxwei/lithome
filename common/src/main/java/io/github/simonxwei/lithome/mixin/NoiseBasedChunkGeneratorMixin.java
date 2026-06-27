@@ -7,10 +7,12 @@ import io.github.simonxwei.lithome.core.registries.LithomeRegistries;
 import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkAccess;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeMaterialSystem;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSource;
+import io.github.simonxwei.lithome.world.level.lithome.LithomeSourceProvider;
 import io.github.simonxwei.lithome.world.level.lithome.MultiNoiseLithomeSource;
 import io.github.simonxwei.lithome.world.level.lithome.MultiNoiseLithomeSourceParameterList;
 import io.github.simonxwei.lithome.world.level.lithome.MultiNoiseLithomeSourceParameterLists;
 import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -30,8 +32,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Optional;
+
 @Mixin(NoiseBasedChunkGenerator.class)
-public abstract class NoiseBasedChunkGeneratorMixin {
+public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProvider {
 
     @Unique
     private static final ResourceKey<NoiseGeneratorSettings> lithome$overworldSettings =
@@ -62,38 +66,29 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             final @Local(argsOnly = true) StructureManager structureManager
     ) {
         original.call(chunk, biomeResolver, sampler);
+        this.lithome$getLithomeSource(structureManager.registryAccess())
+                .ifPresent(source -> ((LithomeChunkAccess) (Object) chunk)
+                        .lithome$fillLithomesFromNoise(source, sampler));
+    }
 
-        if (!this.lithome$usesOverworldLithomes()) {
-            return;
+    @Override
+    public Optional<LithomeSource> lithome$getLithomeSource(
+            final RegistryAccess registryAccess
+    ) {
+        if (!this.settings.is(lithome$overworldSettings)) {
+            return Optional.empty();
         }
 
-        ((LithomeChunkAccess) (Object) chunk)
-                .lithome$fillLithomesFromNoise(
-                        this.lithome$getOrCreateSource(structureManager),
-                        sampler
-                );
-    }
-
-    @Unique
-    private boolean lithome$usesOverworldLithomes() {
-        return this.settings.is(lithome$overworldSettings);
-    }
-
-    @Unique
-    private LithomeSource lithome$getOrCreateSource(
-            final StructureManager structureManager
-    ) {
         LithomeSource source = this.lithome$source;
         if (source != null) {
-            return source;
+            return Optional.of(source);
         }
 
         synchronized (this) {
             source = this.lithome$source;
             if (source == null) {
                 final Holder<MultiNoiseLithomeSourceParameterList> preset =
-                        structureManager
-                                .registryAccess()
+                        registryAccess
                                 .lookupOrThrow(
                                         LithomeRegistries
                                                 .MULTI_NOISE_LITHOME_SOURCE_PARAMETER_LIST
@@ -101,13 +96,12 @@ public abstract class NoiseBasedChunkGeneratorMixin {
                                 .getOrThrow(
                                         MultiNoiseLithomeSourceParameterLists.OVERWORLD
                                 );
-
                 source = MultiNoiseLithomeSource.createFromPreset(preset);
                 this.lithome$source = source;
             }
         }
 
-        return source;
+        return Optional.of(source);
     }
 
     @Inject(
@@ -124,8 +118,12 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             final ChunkAccess chunk,
             final CallbackInfo ci
     ) {
-        if (this.lithome$usesOverworldLithomes()) {
-            LithomeMaterialSystem.apply(region, chunk);
+        if (this.settings.is(lithome$overworldSettings)) {
+            LithomeMaterialSystem.apply(
+                    region,
+                    chunk,
+                    this.settings.value().defaultBlock()
+            );
         }
     }
 }

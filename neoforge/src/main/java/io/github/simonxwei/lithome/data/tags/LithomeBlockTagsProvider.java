@@ -12,15 +12,15 @@ import java.util.concurrent.CompletableFuture;
 
 public final class LithomeBlockTagsProvider extends BlockTagsProvider {
 
-    public LithomeBlockTagsProvider(final PackOutput output, final CompletableFuture<HolderLookup.Provider> lookupProvider) {
+    public LithomeBlockTagsProvider(
+            final PackOutput output,
+            final CompletableFuture<HolderLookup.Provider> lookupProvider
+    ) {
         super(output, lookupProvider, Constants.MOD_ID);
     }
 
     @Override
     protected void addTags(final HolderLookup.Provider provider) {
-        this.tag(LithomeBlockTags.REPLACEABLE_BASE_ROCKS)
-                .add(BlockItemIds.STONE.block());
-
         this.tag(LithomeBlockTags.BASE_STONE_OVERWORLD)
                 .addOptionalTag(BlockTags.BASE_STONE_OVERWORLD)
                 .add(BlockItemIds.CALCITE.block());

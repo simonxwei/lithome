@@ -1,6 +1,5 @@
 package io.github.simonxwei.lithome.world.level.lithome;
 
-import io.github.simonxwei.lithome.tags.LithomeBlockTags;
 import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -21,7 +20,11 @@ public final class LithomeMaterialSystem {
     private LithomeMaterialSystem() {
     }
 
-    public static void apply(final WorldGenRegion region, final ChunkAccess chunk) {
+    public static void apply(
+            final WorldGenRegion region,
+            final ChunkAccess chunk,
+            final BlockState defaultBlock
+    ) {
         final Map<Long, LithomeChunkAccess> sourceChunks = new HashMap<>();
         final LithomeManager manager = new LithomeManager(
                 (quartX, quartY, quartZ) -> getStoredLithome(
@@ -41,7 +44,7 @@ public final class LithomeMaterialSystem {
 
         for (int sectionIndex = 0; sectionIndex < chunk.getSections().length; ++sectionIndex) {
             final LevelChunkSection section = chunk.getSection(sectionIndex);
-            if (!section.maybeHas(state -> state.is(LithomeBlockTags.REPLACEABLE_BASE_ROCKS))) {
+            if (!section.maybeHas(state -> state == defaultBlock)) {
                 continue;
             }
 
@@ -49,17 +52,18 @@ public final class LithomeMaterialSystem {
                     chunk.getSectionYFromSectionIndex(sectionIndex)
             );
             section.acquire();
-
             try {
                 for (int localX = 0; localX < 16; ++localX) {
                     final int blockX = minimumBlockX + localX;
-
                     for (int localZ = 0; localZ < 16; ++localZ) {
                         final int blockZ = minimumBlockZ + localZ;
-
                         for (int localY = 0; localY < 16; ++localY) {
-                            final BlockState current = section.getBlockState(localX, localY, localZ);
-                            if (!current.is(LithomeBlockTags.REPLACEABLE_BASE_ROCKS)) {
+                            final BlockState current = section.getBlockState(
+                                    localX,
+                                    localY,
+                                    localZ
+                            );
+                            if (current != defaultBlock) {
                                 continue;
                             }
 
@@ -69,9 +73,14 @@ public final class LithomeMaterialSystem {
                                     .getLithome(position)
                                     .value()
                                     .getBaseRock();
-
                             if (current != replacement) {
-                                section.setBlockState(localX, localY, localZ, replacement, false);
+                                section.setBlockState(
+                                        localX,
+                                        localY,
+                                        localZ,
+                                        replacement,
+                                        false
+                                );
                                 changed = true;
                             }
                         }
@@ -98,21 +107,30 @@ public final class LithomeMaterialSystem {
         final int chunkZ = SectionPos.blockToSectionCoord(QuartPos.toBlock(quartZ));
         final long chunkKey = ChunkPos.pack(chunkX, chunkZ);
         LithomeChunkAccess lithomeChunk = sourceChunks.get(chunkKey);
+
         if (lithomeChunk == null) {
-            final ChunkAccess sourceChunk = region.getChunk(chunkX, chunkZ, ChunkStatus.BIOMES, false);
+            final ChunkAccess sourceChunk = region.getChunk(
+                    chunkX,
+                    chunkZ,
+                    ChunkStatus.BIOMES,
+                    false
+            );
             if (sourceChunk == null) {
                 throw new IllegalStateException(
-                        "Missing BIOMES-stage chunk while reading stored Lithome at " + chunkX + ", " + chunkZ
+                        "Missing BIOMES-stage chunk while reading stored Lithome at "
+                                + chunkX + ", " + chunkZ
                 );
             }
             if (!(sourceChunk instanceof LithomeChunkAccess storedLithomeChunk)) {
                 throw new IllegalStateException(
-                        "Chunk does not expose stored Lithome data: " + sourceChunk.getPos()
+                        "Chunk does not expose stored Lithome data: "
+                                + sourceChunk.getPos()
                 );
             }
             lithomeChunk = storedLithomeChunk;
             sourceChunks.put(chunkKey, lithomeChunk);
         }
+
         return lithomeChunk.getNoiseLithome(quartX, quartY, quartZ);
     }
 }

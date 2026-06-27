@@ -4,6 +4,8 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Climate;
 
+import java.util.stream.Stream;
+
 public final class FixedLithomeSource extends LithomeSource {
 
     public static final MapCodec<FixedLithomeSource> CODEC;
@@ -15,8 +17,13 @@ public final class FixedLithomeSource extends LithomeSource {
     }
 
     @Override
-    public MapCodec<FixedLithomeSource> codec() {
+    protected MapCodec<FixedLithomeSource> codec() {
         return CODEC;
+    }
+
+    @Override
+    protected Stream<Holder<Lithome>> collectPossibleLithomes() {
+        return Stream.of(this.lithome);
     }
 
     @Override
