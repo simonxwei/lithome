@@ -7,6 +7,6 @@
   "commands.filllithome.success.count": "Changed %s lithome cells in the region from %s %s %s to %s %s %s",
   "commands.lithome.unavailable": "Lithomes are not enabled for this dimension",
   "commands.lithome.query.success": "At %s: stored=%s, base_rock=%s, quart=[%s, %s, %s]",
-  "commands.lithome.sample.success": "At %s: sampled=%s, temperature=%s, humidity=%s, continentalness=%s, erosion=%s, depth=%s, weirdness=%s, quart=[%s, %s, %s]",
+  "commands.lithome.sample.success": "At %s: sampled=%s, material=%s, tectonics=%s, continentalness=%s, quart=[%s, %s, %s]",
   "commands.lithome.compare.success": "At %s: stored=%s, sampled=%s, match=%s"
 }

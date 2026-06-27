@@ -12,7 +12,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.biome.Climate;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Set;
@@ -22,13 +21,13 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public abstract class LithomeSource implements LithomeResolver {
-
     public static final Codec<LithomeSource> CODEC;
 
-    private final Supplier<Set<Holder<Lithome>>> possibleLithomes =
-            Suppliers.memoize(() -> this.collectPossibleLithomes()
+    private final Supplier<Set<Holder<Lithome>>> possibleLithomes = Suppliers.memoize(
+            () -> this.collectPossibleLithomes()
                     .distinct()
-                    .collect(ImmutableSet.toImmutableSet()));
+                    .collect(ImmutableSet.toImmutableSet())
+    );
 
     protected LithomeSource() {
     }
@@ -47,14 +46,13 @@ public abstract class LithomeSource implements LithomeResolver {
             final int horizontalResolution,
             final int verticalResolution,
             final Predicate<Holder<Lithome>> allowed,
-            final Climate.Sampler sampler,
+            final LithomeSampler sampler,
             final LevelReader level
     ) {
         final Set<Holder<Lithome>> candidates = this.possibleLithomes()
                 .stream()
                 .filter(allowed)
                 .collect(ImmutableSet.toImmutableSet());
-
         if (candidates.isEmpty()) {
             return null;
         }
@@ -100,7 +98,7 @@ public abstract class LithomeSource implements LithomeResolver {
             int quartX,
             int quartY,
             int quartZ,
-            Climate.Sampler sampler
+            LithomeSampler sampler
     );
 
     static {

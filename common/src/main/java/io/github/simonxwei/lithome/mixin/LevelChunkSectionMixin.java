@@ -4,8 +4,8 @@ import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkSection;
 import io.github.simonxwei.lithome.world.level.chunk.LithomePalettedContainerFactory;
 import io.github.simonxwei.lithome.world.level.lithome.Lithome;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeResolver;
+import io.github.simonxwei.lithome.world.level.lithome.LithomeSampler;
 import net.minecraft.core.Holder;
-import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.PalettedContainerFactory;
@@ -18,7 +18,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LevelChunkSection.class)
 public abstract class LevelChunkSectionMixin implements LithomeChunkSection {
-
     @Unique
     private PalettedContainerRO<Holder<Lithome>> lithome$lithomes;
 
@@ -68,12 +67,13 @@ public abstract class LevelChunkSectionMixin implements LithomeChunkSection {
     @Override
     public void lithome$fillLithomesFromNoise(
             final LithomeResolver resolver,
-            final Climate.Sampler sampler,
+            final LithomeSampler sampler,
             final int quartMinX,
             final int quartMinY,
             final int quartMinZ
     ) {
-        final PalettedContainer<Holder<Lithome>> newLithomes = this.lithome$getLithomes().recreate();
+        final PalettedContainer<Holder<Lithome>> newLithomes =
+                this.lithome$getLithomes().recreate();
 
         for (int x = 0; x < 4; ++x) {
             for (int y = 0; y < 4; ++y) {
@@ -107,7 +107,9 @@ public abstract class LevelChunkSectionMixin implements LithomeChunkSection {
     }
 
     @Override
-    public void lithome$setLithomes(final PalettedContainerRO<Holder<Lithome>> lithomes) {
+    public void lithome$setLithomes(
+            final PalettedContainerRO<Holder<Lithome>> lithomes
+    ) {
         if (lithomes == null) {
             throw new IllegalArgumentException("Lithome container cannot be null");
         }

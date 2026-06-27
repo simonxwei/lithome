@@ -6,6 +6,7 @@ import com.llamalad7.mixinextras.sugar.Local;
 import io.github.simonxwei.lithome.core.registries.LithomeRegistries;
 import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkAccess;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeMaterialSystem;
+import io.github.simonxwei.lithome.world.level.lithome.LithomeSampler;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSource;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSourceProvider;
 import io.github.simonxwei.lithome.world.level.lithome.MultiNoiseLithomeSource;
@@ -36,7 +37,6 @@ import java.util.Optional;
 
 @Mixin(NoiseBasedChunkGenerator.class)
 public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProvider {
-
     @Unique
     private static final ResourceKey<NoiseGeneratorSettings> lithome$overworldSettings =
             ResourceKey.create(
@@ -51,6 +51,9 @@ public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProv
     @Unique
     private volatile LithomeSource lithome$source;
 
+    @Unique
+    private volatile LithomeSamplerCache lithome$samplerCache;
+
     @WrapOperation(
             method = "doCreateBiomes",
             at = @At(
@@ -61,14 +64,46 @@ public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProv
     private void lithome$fillLithomesFromNoise(
             final ChunkAccess chunk,
             final BiomeResolver biomeResolver,
-            final Climate.Sampler sampler,
+            final Climate.Sampler climateSampler,
             final Operation<Void> original,
-            final @Local(argsOnly = true) StructureManager structureManager
+            final @Local(argsOnly = true) StructureManager structureManager,
+            final @Local(argsOnly = true) RandomState randomState
     ) {
-        original.call(chunk, biomeResolver, sampler);
+        original.call(chunk, biomeResolver, climateSampler);
         this.lithome$getLithomeSource(structureManager.registryAccess())
                 .ifPresent(source -> ((LithomeChunkAccess) (Object) chunk)
-                        .lithome$fillLithomesFromNoise(source, sampler));
+                        .lithome$fillLithomesFromNoise(
+                                source,
+                                this.lithome$getOrCreateSampler(
+                                        randomState,
+                                        climateSampler
+                                )
+                        ));
+    }
+
+
+    @Unique
+    private LithomeSampler lithome$getOrCreateSampler(
+            final RandomState randomState,
+            final Climate.Sampler climateSampler
+    ) {
+        LithomeSamplerCache cache = this.lithome$samplerCache;
+        if (cache != null && cache.randomState() == randomState) {
+            return cache.sampler();
+        }
+
+        synchronized (this) {
+            cache = this.lithome$samplerCache;
+            if (cache == null || cache.randomState() != randomState) {
+                cache = new LithomeSamplerCache(
+                        randomState,
+                        LithomeSampler.create(randomState, climateSampler)
+                );
+                this.lithome$samplerCache = cache;
+            }
+        }
+
+        return cache.sampler();
     }
 
     @Override
@@ -87,15 +122,11 @@ public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProv
         synchronized (this) {
             source = this.lithome$source;
             if (source == null) {
-                final Holder<MultiNoiseLithomeSourceParameterList> preset =
-                        registryAccess
-                                .lookupOrThrow(
-                                        LithomeRegistries
-                                                .MULTI_NOISE_LITHOME_SOURCE_PARAMETER_LIST
-                                )
-                                .getOrThrow(
-                                        MultiNoiseLithomeSourceParameterLists.OVERWORLD
-                                );
+                final Holder<MultiNoiseLithomeSourceParameterList> preset = registryAccess
+                        .lookupOrThrow(
+                                LithomeRegistries.MULTI_NOISE_LITHOME_SOURCE_PARAMETER_LIST
+                        )
+                        .getOrThrow(MultiNoiseLithomeSourceParameterLists.OVERWORLD);
                 source = MultiNoiseLithomeSource.createFromPreset(preset);
                 this.lithome$source = source;
             }
@@ -125,5 +156,12 @@ public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProv
                     this.settings.value().defaultBlock()
             );
         }
+    }
+
+
+    private record LithomeSamplerCache(
+            RandomState randomState,
+            LithomeSampler sampler
+    ) {
     }
 }

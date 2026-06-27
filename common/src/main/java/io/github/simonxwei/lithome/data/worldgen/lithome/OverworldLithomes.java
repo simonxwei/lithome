@@ -4,7 +4,6 @@ import io.github.simonxwei.lithome.world.level.lithome.Lithome;
 import net.minecraft.world.level.block.Blocks;
 
 public final class OverworldLithomes {
-
     private OverworldLithomes() {
     }
 
@@ -22,5 +21,9 @@ public final class OverworldLithomes {
 
     public static Lithome deepslate() {
         return new Lithome(Blocks.DEEPSLATE.defaultBlockState());
+    }
+
+    public static Lithome calcite() {
+        return new Lithome(Blocks.CALCITE.defaultBlockState());
     }
 }

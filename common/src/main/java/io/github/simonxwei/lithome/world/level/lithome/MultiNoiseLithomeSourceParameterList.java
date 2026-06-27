@@ -11,7 +11,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryFileCodec;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.biome.Climate;
 
 import java.util.Map;
 import java.util.Objects;
@@ -21,7 +20,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class MultiNoiseLithomeSourceParameterList {
-
     public static final Codec<MultiNoiseLithomeSourceParameterList> DIRECT_CODEC =
             RecordCodecBuilder.create(instance -> instance.group(
                     Preset.CODEC
@@ -37,7 +35,7 @@ public final class MultiNoiseLithomeSourceParameterList {
             );
 
     private final Preset preset;
-    private final Climate.ParameterList<Holder<Lithome>> parameters;
+    private final LithomeClimate.ParameterList<Holder<Lithome>> parameters;
 
     public MultiNoiseLithomeSourceParameterList(
             final Preset preset,
@@ -49,7 +47,7 @@ public final class MultiNoiseLithomeSourceParameterList {
         this.parameters = provider.apply(lithomes::getOrThrow);
     }
 
-    public Climate.ParameterList<Holder<Lithome>> parameters() {
+    public LithomeClimate.ParameterList<Holder<Lithome>> parameters() {
         return this.parameters;
     }
 
@@ -57,36 +55,33 @@ public final class MultiNoiseLithomeSourceParameterList {
             Identifier id,
             SourceProvider provider
     ) {
-
         public static final Preset OVERWORLD = new Preset(
                 Constants.id("overworld"),
                 new SourceProvider() {
                     @Override
-                    public <T> Climate.ParameterList<T> apply(
+                    public <T> LithomeClimate.ParameterList<T> apply(
                             final Function<ResourceKey<Lithome>, T> lookup
                     ) {
-                        return OverworldLithomeBuilder.createTestParameters(lookup);
+                        return OverworldLithomeBuilder.createParameters(lookup);
                     }
                 }
         );
 
-        private static final Map<Identifier, Preset> BY_NAME =
-                Stream.of(OVERWORLD)
-                        .collect(Collectors.toMap(Preset::id, preset -> preset));
+        private static final Map<Identifier, Preset> BY_NAME = Stream.of(OVERWORLD)
+                .collect(Collectors.toMap(Preset::id, preset -> preset));
 
-        public static final Codec<Preset> CODEC =
-                Identifier.CODEC.flatXmap(
-                        identifier -> Optional.ofNullable(BY_NAME.get(identifier))
-                                .map(DataResult::success)
-                                .orElseGet(() -> DataResult.error(
-                                        () -> "Unknown Lithome parameter preset: " + identifier
-                                )),
-                        preset -> DataResult.success(preset.id())
-                );
+        public static final Codec<Preset> CODEC = Identifier.CODEC.flatXmap(
+                identifier -> Optional.ofNullable(BY_NAME.get(identifier))
+                        .map(DataResult::success)
+                        .orElseGet(() -> DataResult.error(
+                                () -> "Unknown Lithome parameter preset: " + identifier
+                        )),
+                preset -> DataResult.success(preset.id())
+        );
 
         @FunctionalInterface
         private interface SourceProvider {
-            <T> Climate.ParameterList<T> apply(
+            <T> LithomeClimate.ParameterList<T> apply(
                     Function<ResourceKey<Lithome>, T> lookup
             );
         }

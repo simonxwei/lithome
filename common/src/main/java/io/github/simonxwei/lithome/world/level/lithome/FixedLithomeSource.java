@@ -2,12 +2,10 @@ package io.github.simonxwei.lithome.world.level.lithome;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.Holder;
-import net.minecraft.world.level.biome.Climate;
 
 import java.util.stream.Stream;
 
 public final class FixedLithomeSource extends LithomeSource {
-
     public static final MapCodec<FixedLithomeSource> CODEC;
 
     private final Holder<Lithome> lithome;
@@ -17,7 +15,7 @@ public final class FixedLithomeSource extends LithomeSource {
     }
 
     @Override
-    protected MapCodec<FixedLithomeSource> codec() {
+    protected MapCodec<? extends LithomeSource> codec() {
         return CODEC;
     }
 
@@ -31,7 +29,7 @@ public final class FixedLithomeSource extends LithomeSource {
             final int quartX,
             final int quartY,
             final int quartZ,
-            final Climate.Sampler sampler
+            final LithomeSampler sampler
     ) {
         return this.lithome;
     }

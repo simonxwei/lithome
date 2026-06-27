@@ -16,8 +16,10 @@ import com.mojang.datafixers.util.Pair;
 import io.github.simonxwei.lithome.core.registries.LithomeRegistries;
 import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkAccess;
 import io.github.simonxwei.lithome.world.level.lithome.Lithome;
+import io.github.simonxwei.lithome.world.level.lithome.LithomeClimate;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeManager;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeResolver;
+import io.github.simonxwei.lithome.world.level.lithome.LithomeSampler;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSource;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -41,7 +43,6 @@ import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -53,7 +54,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class LithomeCommands {
-
     private static final int MAX_LOCATE_RADIUS = 6400;
     private static final int LOCATE_HORIZONTAL_RESOLUTION = 32;
     private static final int LOCATE_VERTICAL_RESOLUTION = 64;
@@ -123,9 +123,7 @@ public final class LithomeCommands {
         final RequiredArgumentBuilder<CommandSourceStack, ResourceOrTagKeyArgument.Result<Lithome>> target =
                 Commands.argument(
                         "lithome",
-                        ResourceOrTagKeyArgument.resourceOrTagKey(
-                                LithomeRegistries.LITHOME
-                        )
+                        ResourceOrTagKeyArgument.resourceOrTagKey(LithomeRegistries.LITHOME)
                 );
 
         target.executes(command -> fill(
@@ -135,7 +133,6 @@ public final class LithomeCommands {
                 getTargetLithome(command, "lithome"),
                 lithome -> true
         ));
-
         target.then(Commands.literal("replace")
                 .then(Commands.argument(
                                 "filter",
@@ -163,8 +160,7 @@ public final class LithomeCommands {
     private static void registerExecute(
             final CommandDispatcher<CommandSourceStack> dispatcher
     ) {
-        final CommandNode<CommandSourceStack> execute =
-                dispatcher.getRoot().getChild("execute");
+        final CommandNode<CommandSourceStack> execute = dispatcher.getRoot().getChild("execute");
         if (execute == null) {
             throw new IllegalStateException("Vanilla execute command was not registered");
         }
@@ -264,7 +260,7 @@ public final class LithomeCommands {
                 LOCATE_HORIZONTAL_RESOLUTION,
                 LOCATE_VERTICAL_RESOLUTION,
                 target,
-                level.getChunkSource().randomState().sampler(),
+                LithomeSampler.create(level.getChunkSource().randomState()),
                 level
         );
         stopwatch.stop();
@@ -348,7 +344,9 @@ public final class LithomeCommands {
         }
 
         final MutableInt changedCount = new MutableInt(0);
-        final Climate.Sampler sampler = level.getChunkSource().randomState().sampler();
+        final LithomeSampler sampler = LithomeSampler.create(
+                level.getChunkSource().randomState()
+        );
         for (final ChunkAccess chunk : chunks) {
             if (!(chunk instanceof LithomeChunkAccess lithomeChunk)) {
                 throw new IllegalStateException(
@@ -356,7 +354,13 @@ public final class LithomeCommands {
                 );
             }
             lithomeChunk.lithome$fillLithomesFromNoise(
-                    makeResolver(changedCount, lithomeChunk, region, target, filter),
+                    makeResolver(
+                            changedCount,
+                            lithomeChunk,
+                            region,
+                            target,
+                            filter
+                    ),
                     sampler
             );
             chunk.markUnsaved();
@@ -428,18 +432,15 @@ public final class LithomeCommands {
     ) throws CommandSyntaxException {
         final LithomeCommandQueries.SampleResult result =
                 LithomeCommandQueries.sampled(source.getLevel(), position);
-        final Climate.TargetPoint climate = result.climate();
+        final LithomeClimate.TargetPoint parameters = result.parameters();
         final LithomeManager.Selection selection = result.selection();
         source.sendSuccess(() -> Component.translatable(
                 "commands.lithome.sample.success",
                 coordinates(position),
                 selection.lithome().getRegisteredName(),
-                formatClimate(climate.temperature()),
-                formatClimate(climate.humidity()),
-                formatClimate(climate.continentalness()),
-                formatClimate(climate.erosion()),
-                formatClimate(climate.depth()),
-                formatClimate(climate.weirdness()),
+                formatParameter(parameters.material()),
+                formatParameter(parameters.tectonics()),
+                formatParameter(parameters.continentalness()),
                 selection.quartX(),
                 selection.quartY(),
                 selection.quartZ()
@@ -476,7 +477,7 @@ public final class LithomeCommands {
         );
     }
 
-    private static String formatClimate(final long value) {
+    private static String formatParameter(final long value) {
         return String.format(
                 Locale.ROOT,
                 "%.3f",

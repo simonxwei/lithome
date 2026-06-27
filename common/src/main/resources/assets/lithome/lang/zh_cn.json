@@ -1,12 +1,12 @@
 {
   "commands.locate.lithome.invalid": "未知的岩石群系或岩石群系标签“%s”",
   "commands.locate.lithome.not_found": "在合理距离内未找到岩石群系“%s”",
-  "commands.locate.lithome.success": "距离最近的%s位于%s（相距%s格）",
+  "commands.locate.lithome.success": "距离最近的%s位于%s（相距%s方块）",
   "commands.filllithome.target_tag": "填充目标必须是单个岩石群系，不能是标签“%s”",
   "commands.filllithome.toobig": "指定区域中的方块过多（上限为%s，指定了%s）",
   "commands.filllithome.success.count": "已修改%s个岩石群系储存单元，区域从（%s %s %s）至（%s %s %s）",
   "commands.lithome.unavailable": "当前维度未启用岩石群系",
   "commands.lithome.query.success": "位置%s：已储存=%s，基础岩石=%s，quart=[%s, %s, %s]",
-  "commands.lithome.sample.success": "位置%s：当前采样=%s，温度=%s，湿度=%s，陆地性=%s，侵蚀=%s，深度=%s，奇异度=%s，quart=[%s, %s, %s]",
+  "commands.lithome.sample.success": "位置%s：当前采样=%s，物质倾向=%s，构造环境=%s，陆地性=%s，quart=[%s, %s, %s]",
   "commands.lithome.compare.success": "位置%s：已储存=%s，当前采样=%s，一致=%s"
 }
