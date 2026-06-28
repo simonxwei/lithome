@@ -3,6 +3,10 @@ package io.github.simonxwei.lithome.world.level.levelgen.surface.condition;
 import net.minecraft.world.level.levelgen.SurfaceRules;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * @see net.minecraft.world.level.levelgen.SurfaceRules.LazyCondition
+ * @author simonxwei
+ */
 public abstract class LithomeLazyCondition implements SurfaceRules.Condition {
 
     protected final SurfaceRules.Context context;

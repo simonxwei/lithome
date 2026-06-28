@@ -6,6 +6,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.SurfaceRules;
 
+/**
+ * @author simonxwei
+ */
 public record Skip() implements SurfaceRules.RuleSource {
 
     public static final MapCodec<Skip> CODEC;

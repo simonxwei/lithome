@@ -1,13 +1,5 @@
 {
-  "materials": {
-    "type": "lithome:inclusions",
-    "primary": {
-      "Name": "minecraft:stone"
-    },
-    "secondary": {
-      "Name": "minecraft:andesite"
-    },
-    "target_fraction": 0.2,
-    "noise": "lithome:coarse_inclusions"
+  "default_state": {
+    "Name": "minecraft:stone"
   }
 }

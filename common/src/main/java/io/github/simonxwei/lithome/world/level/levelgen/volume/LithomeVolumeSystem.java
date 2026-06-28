@@ -1,9 +1,8 @@
-package io.github.simonxwei.lithome.world.level.lithome;
+package io.github.simonxwei.lithome.world.level.levelgen.volume;
 
 import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkAccess;
-import io.github.simonxwei.lithome.world.level.lithome.material.LithomeMaterialContext;
-import io.github.simonxwei.lithome.world.level.lithome.material.LithomeMaterialSampler;
-import net.minecraft.core.BlockPos;
+import io.github.simonxwei.lithome.world.level.lithome.Lithome;
+import io.github.simonxwei.lithome.world.level.lithome.LithomeManager;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.SectionPos;
@@ -14,19 +13,26 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.RandomState;
+import net.minecraft.world.level.levelgen.WorldGenerationContext;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public final class LithomeMaterialSystem {
-    private LithomeMaterialSystem() {
-    }
+/**
+ * @see net.minecraft.world.level.levelgen.SurfaceSystem
+ * @author simonxwei
+ */
+public final class LithomeVolumeSystem {
+
+    private LithomeVolumeSystem() {}
 
     public static void apply(
         final WorldGenRegion region,
         final ChunkAccess chunk,
         final RandomState randomState,
-        final BlockState defaultBlock
+        final WorldGenerationContext generationContext,
+        final BlockState defaultBlock,
+        final LithomeVolumeRules.RuleSource ruleSource
     ) {
         final Map<Long, LithomeChunkAccess> sourceChunks = new HashMap<>();
         final LithomeManager manager = new LithomeManager(
@@ -39,13 +45,16 @@ public final class LithomeMaterialSystem {
             ),
             region.getSeed()
         );
-        final LithomeMaterialContext materialContext = new LithomeMaterialContext(
-            new LithomeMaterialSampler(randomState)
+        final LithomeVolumeRules.Context context = new LithomeVolumeRules.Context(
+            randomState,
+            manager,
+            generationContext
         );
+        final LithomeVolumeRules.VolumeRule runtimeRule = ruleSource.apply(context);
+
         final ChunkPos chunkPos = chunk.getPos();
         final int minimumBlockX = chunkPos.getMinBlockX();
         final int minimumBlockZ = chunkPos.getMinBlockZ();
-        final BlockPos.MutableBlockPos position = new BlockPos.MutableBlockPos();
         boolean changed = false;
 
         for (int sectionIndex = 0; sectionIndex < chunk.getSections().length; ++sectionIndex) {
@@ -53,6 +62,7 @@ public final class LithomeMaterialSystem {
             if (!section.maybeHas(state -> state == defaultBlock)) {
                 continue;
             }
+
             final int minimumBlockY = SectionPos.sectionToBlockCoord(
                 chunk.getSectionYFromSectionIndex(sectionIndex)
             );
@@ -62,30 +72,19 @@ public final class LithomeMaterialSystem {
                     final int blockX = minimumBlockX + localX;
                     for (int localZ = 0; localZ < 16; ++localZ) {
                         final int blockZ = minimumBlockZ + localZ;
+                        context.updateXZ(blockX, blockZ);
+
                         for (int localY = 0; localY < 16; ++localY) {
-                            final BlockState current = section.getBlockState(
-                                localX,
-                                localY,
-                                localZ
-                            );
+                            final BlockState current = section.getBlockState(localX, localY, localZ);
                             if (current != defaultBlock) {
                                 continue;
                             }
+
                             final int blockY = minimumBlockY + localY;
-                            position.set(blockX, blockY, blockZ);
-                            final BlockState replacement = manager
-                                .getLithome(position)
-                                .value()
-                                .getMaterials()
-                                .resolve(materialContext.at(blockX, blockY, blockZ));
-                            if (current != replacement) {
-                                section.setBlockState(
-                                    localX,
-                                    localY,
-                                    localZ,
-                                    replacement,
-                                    false
-                                );
+                            context.updateY(blockY);
+                            final BlockState replacement = runtimeRule.tryApply();
+                            if (replacement != null && replacement != current) {
+                                section.setBlockState(localX, localY, localZ, replacement, false);
                                 changed = true;
                             }
                         }
@@ -111,6 +110,7 @@ public final class LithomeMaterialSystem {
         final int chunkX = SectionPos.blockToSectionCoord(QuartPos.toBlock(quartX));
         final int chunkZ = SectionPos.blockToSectionCoord(QuartPos.toBlock(quartZ));
         final long chunkKey = ChunkPos.pack(chunkX, chunkZ);
+
         LithomeChunkAccess lithomeChunk = sourceChunks.get(chunkKey);
         if (lithomeChunk == null) {
             final ChunkAccess sourceChunk = region.getChunk(
@@ -133,6 +133,7 @@ public final class LithomeMaterialSystem {
             lithomeChunk = storedLithomeChunk;
             sourceChunks.put(chunkKey, lithomeChunk);
         }
-        return lithomeChunk.getNoiseLithome(quartX, quartY, quartZ);
+
+        return lithomeChunk.lithome$getNoiseLithome(quartX, quartY, quartZ);
     }
 }

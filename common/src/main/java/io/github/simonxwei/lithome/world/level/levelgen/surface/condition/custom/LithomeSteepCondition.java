@@ -7,6 +7,10 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.SurfaceRules;
 
+/**
+ * @see net.minecraft.world.level.levelgen.SurfaceRules.Context.SteepMaterialCondition
+ * @author simonxwei
+ */
 public final class LithomeSteepCondition extends LithomeLazyXZCondition {
 
     private final int height;

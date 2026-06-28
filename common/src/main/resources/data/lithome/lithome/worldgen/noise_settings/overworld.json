@@ -1,0 +1,48 @@
+{
+  "lithome_source": {
+    "type": "lithome:multi_noise",
+    "preset": "lithome:overworld"
+  },
+  "volume_rule": {
+    "type": "lithome:sequence",
+    "sequence": [
+      {
+        "type": "lithome:condition",
+        "if_true": {
+          "type": "lithome:lithome",
+          "lithome_is": [
+            "lithome:stone"
+          ]
+        },
+        "then_run": {
+          "type": "lithome:inclusions",
+          "noise": "lithome:coarse_inclusions",
+          "target_fraction": 0.2,
+          "inclusion_rule": {
+            "type": "lithome:inclusions",
+            "noise": "lithome:nested_inclusions",
+            "target_fraction": 0.08,
+            "inclusion_rule": {
+              "type": "lithome:state",
+              "state": {
+                "Name": "minecraft:granite"
+              }
+            },
+            "host_rule": {
+              "type": "lithome:state",
+              "state": {
+                "Name": "minecraft:andesite"
+              }
+            }
+          },
+          "host_rule": {
+            "type": "lithome:lithome_default_state"
+          }
+        }
+      },
+      {
+        "type": "lithome:lithome_default_state"
+      }
+    ]
+  }
+}

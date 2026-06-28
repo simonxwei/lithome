@@ -1,42 +1,33 @@
 package io.github.simonxwei.lithome.data.worldgen.lithome;
 
 import io.github.simonxwei.lithome.world.level.lithome.Lithome;
-import io.github.simonxwei.lithome.world.level.lithome.LithomeNoises;
-import io.github.simonxwei.lithome.world.level.lithome.material.InclusionsLithomeMaterial;
-import io.github.simonxwei.lithome.world.level.lithome.material.SingleLithomeMaterial;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 
+/**
+ * @see net.minecraft.data.worldgen.biome.OverworldBiomes
+ * @author simonxwei
+ */
 public final class OverworldLithomes {
-    private OverworldLithomes() {
-    }
+
+    private OverworldLithomes() {}
 
     public static Lithome stone() {
-        return new Lithome(new InclusionsLithomeMaterial(
-            Blocks.STONE.defaultBlockState(),
-            Blocks.ANDESITE.defaultBlockState(),
-            0.20F,
-            LithomeNoises.COARSE_INCLUSIONS
-        ));
+        return new Lithome(Blocks.STONE.defaultBlockState());
     }
 
     public static Lithome andesite() {
-        return single(Blocks.ANDESITE.defaultBlockState());
+        return new Lithome(Blocks.ANDESITE.defaultBlockState());
     }
 
     public static Lithome granite() {
-        return single(Blocks.GRANITE.defaultBlockState());
+        return new Lithome(Blocks.GRANITE.defaultBlockState());
     }
 
     public static Lithome deepslate() {
-        return single(Blocks.DEEPSLATE.defaultBlockState());
+        return new Lithome(Blocks.DEEPSLATE.defaultBlockState());
     }
 
     public static Lithome calcite() {
-        return single(Blocks.CALCITE.defaultBlockState());
-    }
-
-    private static Lithome single(final BlockState state) {
-        return new Lithome(new SingleLithomeMaterial(state));
+        return new Lithome(Blocks.CALCITE.defaultBlockState());
     }
 }

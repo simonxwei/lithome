@@ -4,9 +4,13 @@ import io.github.simonxwei.lithome.world.level.lithome.Lithome;
 import io.github.simonxwei.lithome.world.level.lithome.Lithomes;
 import net.minecraft.data.worldgen.BootstrapContext;
 
+/**
+ * @see net.minecraft.data.worldgen.biome.BiomeData
+ * @author simonxwei
+ */
 public final class LithomeData {
-    private LithomeData() {
-    }
+
+    private LithomeData() {}
 
     public static void bootstrap(final BootstrapContext<Lithome> context) {
         context.register(Lithomes.STONE, OverworldLithomes.stone());

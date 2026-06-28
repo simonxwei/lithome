@@ -18,6 +18,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * @author simonxwei
+ */
 @Mixin(PalettedContainerFactory.class)
 public abstract class PalettedContainerFactoryMixin implements LithomePalettedContainerFactory {
 
@@ -34,21 +37,15 @@ public abstract class PalettedContainerFactoryMixin implements LithomePalettedCo
     private Codec<PalettedContainerRO<Holder<Lithome>>> lithome$lithomeContainerCodec;
 
     @Inject(method = "create", at = @At("RETURN"))
-    private static void lithome$initializeCreatedFactory(
-            final RegistryAccess registries,
-            final CallbackInfoReturnable<PalettedContainerFactory> cir
-    ) {
-        ((LithomePalettedContainerFactory) (Object) cir.getReturnValue())
-                .lithome$initializeLithomes(registries);
+    private static void lithome$initializeCreatedFactory(final RegistryAccess registries, final CallbackInfoReturnable<PalettedContainerFactory> cir) {
+        ((LithomePalettedContainerFactory) (Object) cir.getReturnValue()).lithome$initializeLithomes(registries);
     }
 
     @Override
     public void lithome$initializeLithomes(final RegistryAccess registries) {
-        if (this.lithome$lithomeInitializationAttempted) {
-            return;
-        }
-        this.lithome$lithomeInitializationAttempted = true;
+        if (this.lithome$lithomeInitializationAttempted) return;
 
+        this.lithome$lithomeInitializationAttempted = true;
         final Registry<Lithome> lithomeRegistry;
         try {
             lithomeRegistry = registries.lookupOrThrow(LithomeRegistries.LITHOME);
@@ -69,9 +66,7 @@ public abstract class PalettedContainerFactoryMixin implements LithomePalettedCo
 
     @Override
     public boolean lithome$hasLithomeSupport() {
-        return this.lithome$lithomeStrategy != null
-                && this.lithome$defaultLithome != null
-                && this.lithome$lithomeContainerCodec != null;
+        return this.lithome$lithomeStrategy != null && this.lithome$defaultLithome != null && this.lithome$lithomeContainerCodec != null;
     }
 
     @Override
@@ -89,9 +84,7 @@ public abstract class PalettedContainerFactoryMixin implements LithomePalettedCo
     @Unique
     private void lithome$checkInitialized() {
         if (!this.lithome$hasLithomeSupport()) {
-            throw new IllegalStateException(
-                    "Lithome palette support is unavailable for this registry access"
-            );
+            throw new IllegalStateException("Lithome palette support is unavailable for this registry access");
         }
     }
 }

@@ -1,8 +1,5 @@
 {
-  "materials": {
-    "type": "lithome:single",
-    "state": {
-      "Name": "minecraft:granite"
-    }
+  "default_state": {
+    "Name": "minecraft:granite"
   }
 }

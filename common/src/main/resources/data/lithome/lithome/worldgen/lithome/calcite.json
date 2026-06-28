@@ -1,8 +1,5 @@
 {
-  "materials": {
-    "type": "lithome:single",
-    "state": {
-      "Name": "minecraft:calcite"
-    }
+  "default_state": {
+    "Name": "minecraft:calcite"
   }
 }

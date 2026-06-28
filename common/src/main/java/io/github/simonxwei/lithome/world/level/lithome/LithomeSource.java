@@ -20,71 +20,46 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+/**
+ * @see net.minecraft.world.level.biome.BiomeSource
+ * @author simonxwei
+ */
 public abstract class LithomeSource implements LithomeResolver {
+
     public static final Codec<LithomeSource> CODEC;
 
-    private final Supplier<Set<Holder<Lithome>>> possibleLithomes = Suppliers.memoize(
-            () -> this.collectPossibleLithomes()
-                    .distinct()
-                    .collect(ImmutableSet.toImmutableSet())
-    );
+    private final Supplier<Set<Holder<Lithome>>> possibleLithomes;
 
     protected LithomeSource() {
+        this.possibleLithomes = Suppliers.memoize(() -> this.collectPossibleLithomes().distinct().collect(ImmutableSet.toImmutableSet()));
     }
 
-    protected abstract MapCodec<? extends LithomeSource> codec();
+    // public
 
-    protected abstract Stream<Holder<Lithome>> collectPossibleLithomes();
+    protected abstract MapCodec<? extends LithomeSource> codec();
 
     public Set<Holder<Lithome>> possibleLithomes() {
         return this.possibleLithomes.get();
     }
 
-    public @Nullable Pair<BlockPos, Holder<Lithome>> findClosestLithome3d(
-            final BlockPos origin,
-            final int searchRadius,
-            final int horizontalResolution,
-            final int verticalResolution,
-            final Predicate<Holder<Lithome>> allowed,
-            final LithomeSampler sampler,
-            final LevelReader level
-    ) {
-        final Set<Holder<Lithome>> candidates = this.possibleLithomes()
-                .stream()
-                .filter(allowed)
-                .collect(ImmutableSet.toImmutableSet());
-        if (candidates.isEmpty()) {
-            return null;
-        }
+    public @Nullable Pair<BlockPos, Holder<Lithome>> findClosestLithome3d(final BlockPos origin, final int searchRadius, final int sampleResolutionHorizontal, final int sampleResolutionVertical, final Predicate<Holder<Lithome>> allowed, final LithomeClimateSampler sampler, final LevelReader level) {
+        final Set<Holder<Lithome>> candidateLithomes = this.possibleLithomes().stream().filter(allowed).collect(ImmutableSet.toImmutableSet());
 
-        final int sampleRadius = Math.floorDiv(searchRadius, horizontalResolution);
-        final int[] sampleYs = Mth.outFromOrigin(
-                origin.getY(),
-                level.getMinY() + 1,
-                level.getMaxY() + 1,
-                verticalResolution
-        ).toArray();
+        if (candidateLithomes.isEmpty()) return null;
 
-        for (final BlockPos.MutableBlockPos sampleColumn : BlockPos.spiralAround(
-                BlockPos.ZERO,
-                sampleRadius,
-                Direction.EAST,
-                Direction.SOUTH
-        )) {
-            final int blockX = origin.getX() + sampleColumn.getX() * horizontalResolution;
-            final int blockZ = origin.getZ() + sampleColumn.getZ() * horizontalResolution;
-            final int quartX = QuartPos.fromBlock(blockX);
-            final int quartZ = QuartPos.fromBlock(blockZ);
+        final int sampleRadius = Math.floorDiv(searchRadius, sampleResolutionHorizontal);
+        final int[] sampleYs = Mth.outFromOrigin(origin.getY(), level.getMinY() + 1, level.getMaxY() + 1, sampleResolutionVertical).toArray();
+
+        for (final BlockPos.MutableBlockPos sampleColumn : BlockPos.spiralAround(BlockPos.ZERO, sampleRadius, Direction.EAST, Direction.SOUTH)) {
+            final int blockX = origin.getX() + sampleColumn.getX() * sampleResolutionHorizontal;
+            final int blockZ = origin.getZ() + sampleColumn.getZ() * sampleResolutionHorizontal;
+            final int noiseX = QuartPos.fromBlock(blockX);
+            final int noiseZ = QuartPos.fromBlock(blockZ);
 
             for (final int blockY : sampleYs) {
-                final int quartY = QuartPos.fromBlock(blockY);
-                final Holder<Lithome> lithome = this.getNoiseLithome(
-                        quartX,
-                        quartY,
-                        quartZ,
-                        sampler
-                );
-                if (candidates.contains(lithome)) {
+                final int noiseY = QuartPos.fromBlock(blockY);
+                final Holder<Lithome> lithome = this.getNoiseLithome(noiseX, noiseY, noiseZ, sampler);
+                if (candidateLithomes.contains(lithome)) {
                     return Pair.of(new BlockPos(blockX, blockY, blockZ), lithome);
                 }
             }
@@ -93,17 +68,14 @@ public abstract class LithomeSource implements LithomeResolver {
         return null;
     }
 
+    // core
+
     @Override
-    public abstract Holder<Lithome> getNoiseLithome(
-            int quartX,
-            int quartY,
-            int quartZ,
-            LithomeSampler sampler
-    );
+    public abstract Holder<Lithome> getNoiseLithome(final int quartX, final int quartY, final int quartZ, final LithomeClimateSampler sampler);
+
+    protected abstract Stream<Holder<Lithome>> collectPossibleLithomes();
 
     static {
-        CODEC = LithomeBuiltInRegistries.LITHOME_SOURCE
-                .byNameCodec()
-                .dispatchStable(LithomeSource::codec, Function.identity());
+        CODEC = LithomeBuiltInRegistries.LITHOME_SOURCE.byNameCodec().dispatchStable(LithomeSource::codec, Function.identity());
     }
 }

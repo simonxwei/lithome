@@ -7,9 +7,13 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.PalettedContainerRO;
 
+/**
+ * @see net.minecraft.world.level.chunk.PalettedContainerFactory
+ * @author simonxwei
+ */
 public interface LithomePalettedContainerFactory {
 
-    void lithome$initializeLithomes(RegistryAccess registries);
+    void lithome$initializeLithomes(final RegistryAccess registries);
 
     boolean lithome$hasLithomeSupport();
 

@@ -22,6 +22,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 
+/**
+ * @author simonxwei
+ */
 @Mixin(SerializableChunkData.class)
 public abstract class SerializableChunkDataMixin {
 
@@ -36,81 +39,52 @@ public abstract class SerializableChunkDataMixin {
             final CallbackInfoReturnable<SerializableChunkData> cir
     ) {
         final SerializableChunkData data = cir.getReturnValue();
-        if (data == null) {
-            return;
-        }
+        if (data == null) return;
 
-        final LithomePalettedContainerFactory lithomeFactory =
-                (LithomePalettedContainerFactory) (Object) containerFactory;
-        final Codec<PalettedContainerRO<Holder<Lithome>>> codec =
-                lithomeFactory.lithome$lithomeContainerCodec();
+        final LithomePalettedContainerFactory lithomeFactory = (LithomePalettedContainerFactory) (Object) containerFactory;
+        final Codec<PalettedContainerRO<Holder<Lithome>>> codec = lithomeFactory.lithome$lithomeContainerCodec();
         final ListTag sectionTags = chunkData.getListOrEmpty(SerializableChunkData.SECTIONS_TAG);
 
         for (final SerializableChunkData.SectionData sectionData : data.sectionData()) {
             final LevelChunkSection section = sectionData.chunkSection();
-            if (section == null) {
-                continue;
-            }
+            if (section == null) continue;
 
-            final PalettedContainerRO<Holder<Lithome>> lithomes = lithome$findSectionTag(
-                    sectionTags,
-                    sectionData.y()
-            )
+            final PalettedContainerRO<Holder<Lithome>> lithomes = lithome$findSectionTag(sectionTags, sectionData.y())
                     .flatMap(sectionTag -> sectionTag.getCompound(LITHOME_TAG))
                     .map(container -> codec
                             .parse(NbtOps.INSTANCE, container)
-                            .promotePartial(message -> Constants.LOGGER.error(
-                                    "Failed to decode Lithome palette in chunk {} section {}: {}",
-                                    data.chunkPos(),
-                                    sectionData.y(),
-                                    message
-                            ))
+                            .promotePartial(message -> Constants.LOGGER.error("Failed to decode Lithome palette in chunk {} section {}: {}", data.chunkPos(), sectionData.y(), message))
                             .getOrThrow(SerializableChunkData.ChunkReadException::new))
                     .orElseGet(lithomeFactory::lithome$createForLithomes);
 
-            ((LithomeChunkSection) (Object) section).lithome$setLithomes(lithomes);
+            ((LithomeChunkSection) section).lithome$setLithomes(lithomes);
         }
     }
 
     @Inject(method = "write", at = @At("RETURN"))
-    private void lithome$writeLithomeContainers(
-            final CallbackInfoReturnable<CompoundTag> cir
-    ) {
+    private void lithome$writeLithomeContainers(final CallbackInfoReturnable<CompoundTag> cir) {
         final SerializableChunkData data = (SerializableChunkData) (Object) this;
         final CompoundTag chunkData = cir.getReturnValue();
         final ListTag sectionTags = chunkData.getListOrEmpty(SerializableChunkData.SECTIONS_TAG);
-        final Codec<PalettedContainerRO<Holder<Lithome>>> codec =
-                ((LithomePalettedContainerFactory) (Object) data.containerFactory())
-                        .lithome$lithomeContainerCodec();
+        final Codec<PalettedContainerRO<Holder<Lithome>>> codec = ((LithomePalettedContainerFactory) (Object) data.containerFactory()).lithome$lithomeContainerCodec();
 
         for (final SerializableChunkData.SectionData sectionData : data.sectionData()) {
             final LevelChunkSection section = sectionData.chunkSection();
-            if (section == null) {
-                continue;
-            }
+            if (section == null) continue;
 
-            final CompoundTag sectionTag = lithome$findSectionTag(sectionTags, sectionData.y())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Missing serialized section " + sectionData.y()
-                                    + " while writing Lithome data for chunk " + data.chunkPos()
-                    ));
-            sectionTag.store(
-                    LITHOME_TAG,
-                    codec,
-                    ((LithomeChunkSection) (Object) section).lithome$getLithomes()
+            final CompoundTag sectionTag = lithome$findSectionTag(
+                    sectionTags,
+                    sectionData.y()).orElseThrow(() -> new IllegalStateException("Missing serialized section " + sectionData.y() + " while writing Lithome data for chunk " + data.chunkPos())
             );
+            sectionTag.store(LITHOME_TAG, codec, ((LithomeChunkSection) section).lithome$getLithomes());
         }
     }
 
     @Unique
-    private static Optional<CompoundTag> lithome$findSectionTag(
-            final ListTag sectionTags,
-            final int sectionY
-    ) {
+    private static Optional<CompoundTag> lithome$findSectionTag(final ListTag sectionTags, final int sectionY) {
         for (int index = 0; index < sectionTags.size(); ++index) {
             final Optional<CompoundTag> sectionTag = sectionTags.getCompound(index);
-            if (sectionTag.isPresent()
-                    && sectionTag.get().getByteOr("Y", (byte) 0) == (byte) sectionY) {
+            if (sectionTag.isPresent() && sectionTag.get().getByteOr("Y", (byte) 0) == (byte) sectionY) {
                 return sectionTag;
             }
         }

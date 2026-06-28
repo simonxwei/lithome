@@ -1,5 +1,6 @@
 package io.github.simonxwei.lithome.world.level.lithome;
 
+import io.github.simonxwei.lithome.world.level.levelgen.LithomeNoises;
 import net.minecraft.core.QuartPos;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.levelgen.DensityFunction;
@@ -8,10 +9,11 @@ import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.synth.NormalNoise;
 
 /**
- * Samples the independent Lithome fields and the shared vanilla
- * continentalness context at quart coordinates.
+ * @see net.minecraft.world.level.biome.Climate.Sampler
+ * @author simonxwei
  */
-public final class LithomeSampler {
+public final class LithomeClimateSampler {
+
     private static final double XZ_SCALE = 0.25D;
     private static final double SHIFT_SCALE = 4.0D;
 
@@ -20,23 +22,18 @@ public final class LithomeSampler {
     private final NormalNoise shift;
     private final DensityFunction continentalness;
 
-    private LithomeSampler(
-            final NormalNoise material,
-            final NormalNoise tectonics,
-            final NormalNoise shift,
-            final DensityFunction continentalness
-    ) {
+    private LithomeClimateSampler(final NormalNoise material, final NormalNoise tectonics, final NormalNoise shift, final DensityFunction continentalness) {
         this.material = material;
         this.tectonics = tectonics;
         this.shift = shift;
         this.continentalness = continentalness;
     }
 
-    public static LithomeSampler create(
+    public static LithomeClimateSampler create(
             final RandomState randomState,
             final Climate.Sampler climateSampler
     ) {
-        return new LithomeSampler(
+        return new LithomeClimateSampler(
                 randomState.getOrCreateNoise(LithomeNoises.MATERIAL),
                 randomState.getOrCreateNoise(LithomeNoises.TECTONICS),
                 randomState.getOrCreateNoise(Noises.SHIFT),
@@ -44,15 +41,11 @@ public final class LithomeSampler {
         );
     }
 
-    public static LithomeSampler create(final RandomState randomState) {
+    public static LithomeClimateSampler create(final RandomState randomState) {
         return create(randomState, randomState.sampler());
     }
 
-    public LithomeClimate.TargetPoint sample(
-            final int quartX,
-            final int quartY,
-            final int quartZ
-    ) {
+    public LithomeClimate.TargetPoint sample(final int quartX, final int quartY, final int quartZ) {
         final int blockX = QuartPos.toBlock(quartX);
         final int blockY = QuartPos.toBlock(quartY);
         final int blockZ = QuartPos.toBlock(quartZ);

@@ -1,8 +1,5 @@
 {
-  "materials": {
-    "type": "lithome:single",
-    "state": {
-      "Name": "minecraft:andesite"
-    }
+  "default_state": {
+    "Name": "minecraft:andesite"
   }
 }
