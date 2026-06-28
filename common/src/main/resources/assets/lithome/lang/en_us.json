@@ -1,12 +1,16 @@
 {
+  "generator.lithome.normal": "Lithome",
+
   "commands.locate.lithome.invalid": "Unknown lithome or lithome tag '%s'",
   "commands.locate.lithome.not_found": "Could not find lithome '%s' within a reasonable distance",
   "commands.locate.lithome.success": "The nearest %s is at %s (%s blocks away)",
   "commands.filllithome.target_tag": "The fill target must be one lithome, not tag '%s'",
   "commands.filllithome.toobig": "Too many blocks in the specified area (maximum %s, specified %s)",
   "commands.filllithome.success.count": "Changed %s lithome cells in the region from %s %s %s to %s %s %s",
+
   "commands.lithome.unavailable": "Lithomes are not enabled for this dimension",
   "commands.lithome.query.success": "At %s: stored=%s, base_rock=%s, quart=[%s, %s, %s]",
   "commands.lithome.sample.success": "At %s: sampled=%s, material=%s, tectonics=%s, continentalness=%s, quart=[%s, %s, %s]",
+
   "commands.lithome.compare.success": "At %s: stored=%s, sampled=%s, match=%s"
 }

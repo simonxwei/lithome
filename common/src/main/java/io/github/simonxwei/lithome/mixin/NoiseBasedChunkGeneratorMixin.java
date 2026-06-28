@@ -3,13 +3,15 @@ package io.github.simonxwei.lithome.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.serialization.MapCodec;
 import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkAccess;
-import io.github.simonxwei.lithome.world.level.levelgen.setting.LithomeNoiseGeneratorSettings;
-import io.github.simonxwei.lithome.world.level.levelgen.setting.LithomeNoiseGeneratorSettingsResolver;
+import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkGenerators;
+import io.github.simonxwei.lithome.world.level.levelgen.LithomeNoiseBasedChunkGeneratorExtension;
+import io.github.simonxwei.lithome.world.level.levelgen.LithomeNoiseGeneratorSettings;
+import io.github.simonxwei.lithome.world.level.levelgen.volume.LithomeVolumeSystem;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeClimateSampler;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSource;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSourceProvider;
-import io.github.simonxwei.lithome.world.level.levelgen.volume.LithomeVolumeSystem;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.level.WorldGenRegion;
@@ -19,6 +21,7 @@ import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeResolver;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.RandomState;
@@ -30,25 +33,46 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 import java.util.Set;
 
 /**
+ * @see NoiseBasedChunkGenerator
  * @author simonxwei
  */
 @Mixin(NoiseBasedChunkGenerator.class)
-public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProvider {
+public abstract class NoiseBasedChunkGeneratorMixin implements
+    LithomeSourceProvider,
+    LithomeNoiseBasedChunkGeneratorExtension {
 
     @Shadow
     @Final
     private Holder<NoiseGeneratorSettings> settings;
 
     @Unique
-    private volatile @Nullable GeneratorSettingsCache lithome$generatorSettingsCache;
+    private volatile @Nullable LithomeSource lithome$source;
+
+    @Unique
+    private volatile @Nullable Holder<LithomeNoiseGeneratorSettings> lithome$noiseSettings;
 
     @Unique
     private volatile @Nullable LithomeSamplerCache lithome$samplerCache;
+
+    @Inject(
+        method = "codec",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void lithome$useConfiguredCodec(
+        final CallbackInfoReturnable<MapCodec<? extends ChunkGenerator>> cir
+    ) {
+        if (this.lithome$isConfigured()) {
+            cir.setReturnValue(LithomeChunkGenerators.CODEC);
+        }
+    }
 
     @WrapOperation(
         method = "doCreateBiomes",
@@ -62,15 +86,18 @@ public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProv
         final BiomeResolver biomeResolver,
         final Climate.Sampler sampler,
         final Operation<Void> original,
-        final @Local(argsOnly = true, name = "structureManager") StructureManager structureManager,
         final @Local(argsOnly = true, name = "randomState") RandomState randomState
     ) {
         original.call(chunk, biomeResolver, sampler);
-        this.lithome$getGeneratorSettings(structureManager.registryAccess())
-            .ifPresent(generatorSettings -> ((LithomeChunkAccess) chunk).lithome$fillLithomesFromNoise(
-                    generatorSettings.lithomeSource(),
-                    this.lithome$getOrCreateSampler(randomState, sampler)
-            ));
+
+        if (!this.lithome$isConfigured()) {
+            return;
+        }
+
+        ((LithomeChunkAccess) chunk).lithome$fillLithomesFromNoise(
+            this.lithome$getConfiguredLithomeSource(),
+            this.lithome$getOrCreateSampler(randomState, sampler)
+        );
     }
 
     @WrapOperation(
@@ -92,20 +119,79 @@ public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProv
         final Operation<Void> original,
         final @Local(argsOnly = true, name = "region") WorldGenRegion region
     ) {
-        this.lithome$getGeneratorSettings(region.registryAccess()).ifPresent(generatorSettings -> LithomeVolumeSystem.apply(
+        if (this.lithome$isConfigured()) {
+            LithomeVolumeSystem.apply(
                 region,
                 protoChunk,
                 randomState,
                 context,
                 this.settings.value().defaultBlock(),
-                generatorSettings.volumeRule()
-        ));
+                this.lithome$getConfiguredNoiseSettings().value().volumeRule()
+            );
+        }
 
-        original.call(generator, protoChunk, context, randomState, structureManager, biomeManager, blender, possibleBiomes);
+        original.call(
+            generator,
+            protoChunk,
+            context,
+            randomState,
+            structureManager,
+            biomeManager,
+            blender,
+            possibleBiomes
+        );
     }
 
+    // extension
+
+    @Override
+    public synchronized void lithome$configure(
+        final LithomeSource lithomeSource,
+        final Holder<LithomeNoiseGeneratorSettings> noiseSettings
+    ) {
+        if (this.lithome$source != null || this.lithome$noiseSettings != null) {
+            throw new IllegalStateException("Lithome settings have already been configured for this NoiseBasedChunkGenerator");
+        }
+
+        this.lithome$source = lithomeSource;
+        this.lithome$noiseSettings = noiseSettings;
+    }
+
+    @Override
+    public boolean lithome$isConfigured() {
+        return this.lithome$source != null && this.lithome$noiseSettings != null;
+    }
+
+    @Override
+    public LithomeSource lithome$getConfiguredLithomeSource() {
+        final LithomeSource lithomeSource = this.lithome$source;
+        if (lithomeSource == null) {
+            throw new IllegalStateException("NoiseBasedChunkGenerator has no configured LithomeSource");
+        }
+        return lithomeSource;
+    }
+
+    @Override
+    public Holder<LithomeNoiseGeneratorSettings> lithome$getConfiguredNoiseSettings() {
+        final Holder<LithomeNoiseGeneratorSettings> noiseSettings = this.lithome$noiseSettings;
+        if (noiseSettings == null) {
+            throw new IllegalStateException("NoiseBasedChunkGenerator has no configured Lithome noise settings");
+        }
+        return noiseSettings;
+    }
+
+    @Override
+    public Optional<LithomeSource> lithome$getLithomeSource(final RegistryAccess registryAccess) {
+        return Optional.ofNullable(this.lithome$source);
+    }
+
+    // core
+
     @Unique
-    private LithomeClimateSampler lithome$getOrCreateSampler(final RandomState randomState, final Climate.Sampler climateSampler) {
+    private LithomeClimateSampler lithome$getOrCreateSampler(
+        final RandomState randomState,
+        final Climate.Sampler climateSampler
+    ) {
         LithomeSamplerCache cache = this.lithome$samplerCache;
         if (cache != null && cache.randomState() == randomState) {
             return cache.sampler();
@@ -114,38 +200,18 @@ public abstract class NoiseBasedChunkGeneratorMixin implements LithomeSourceProv
         synchronized (this) {
             cache = this.lithome$samplerCache;
             if (cache == null || cache.randomState() != randomState) {
-                cache = new LithomeSamplerCache(randomState, LithomeClimateSampler.create(randomState, climateSampler));
+                cache = new LithomeSamplerCache(
+                    randomState,
+                    LithomeClimateSampler.create(randomState, climateSampler)
+                );
                 this.lithome$samplerCache = cache;
             }
         }
-
         return cache.sampler();
     }
 
-    @Unique
-    private Optional<LithomeNoiseGeneratorSettings> lithome$getGeneratorSettings(final RegistryAccess registryAccess) {
-        GeneratorSettingsCache cache = this.lithome$generatorSettingsCache;
-        if (cache != null && cache.registryAccess() == registryAccess) {
-            return cache.settings();
-        }
-
-        synchronized (this) {
-            cache = this.lithome$generatorSettingsCache;
-            if (cache == null || cache.registryAccess() != registryAccess) {
-                cache = new GeneratorSettingsCache(registryAccess, LithomeNoiseGeneratorSettingsResolver.resolve(registryAccess, this.settings));
-                this.lithome$generatorSettingsCache = cache;
-            }
-        }
-
-        return cache.settings();
-    }
-
-    @Override
-    public Optional<LithomeSource> lithome$getLithomeSource(final RegistryAccess registryAccess) {
-        return this.lithome$getGeneratorSettings(registryAccess).map(LithomeNoiseGeneratorSettings::lithomeSource);
-    }
-
-    private record GeneratorSettingsCache(RegistryAccess registryAccess, Optional<LithomeNoiseGeneratorSettings> settings) {}
-
-    private record LithomeSamplerCache(RandomState randomState, LithomeClimateSampler sampler) {}
+    private record LithomeSamplerCache(
+        RandomState randomState,
+        LithomeClimateSampler sampler
+    ) {}
 }
