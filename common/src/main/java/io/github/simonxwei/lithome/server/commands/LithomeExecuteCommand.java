@@ -9,7 +9,6 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.tree.CommandNode;
-import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.simonxwei.lithome.commands.LithomeCommandQueries;
 import io.github.simonxwei.lithome.core.registries.LithomeRegistries;
 import net.minecraft.commands.CommandBuildContext;
@@ -38,7 +37,11 @@ public final class LithomeExecuteCommand {
     // public
 
     public static void register(final CommandDispatcher<CommandSourceStack> dispatcher, final CommandBuildContext context) {
-        final LiteralCommandNode<CommandSourceStack> execute = dispatcher.register(Commands.literal("execute").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)));
+        final CommandNode<CommandSourceStack> execute = dispatcher.getRoot().getChild("execute");
+
+        if (execute == null) {
+            throw new IllegalStateException("Vanilla execute command is not registered");
+        }
 
         dispatcher.register(
                 Commands.literal("execute")
