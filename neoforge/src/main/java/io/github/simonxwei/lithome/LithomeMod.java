@@ -1,5 +1,6 @@
 package io.github.simonxwei.lithome;
 
+import io.github.simonxwei.lithome.commands.LithomeCommandRegistration;
 import io.github.simonxwei.lithome.core.registries.LithomeBuiltInDeferredRegistries;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -9,6 +10,8 @@ public class LithomeMod {
 
     public LithomeMod(final IEventBus eventBus) {
         LithomeBuiltInDeferredRegistries.init(eventBus);
+        LithomeCommandRegistration.init();
+
         CommonClass.init();
 
         Constants.LOGGER.info("Hello NeoForge world!");

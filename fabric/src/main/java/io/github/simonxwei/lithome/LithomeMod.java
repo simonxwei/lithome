@@ -1,5 +1,6 @@
 package io.github.simonxwei.lithome;
 
+import io.github.simonxwei.lithome.commands.LithomeCommandRegistration;
 import io.github.simonxwei.lithome.core.registries.LithomeDataPackRegistries;
 import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkGenerators;
 import io.github.simonxwei.lithome.world.level.levelgen.LithomeSurfaceRules;
@@ -12,6 +13,7 @@ public final class LithomeMod implements ModInitializer {
         LithomeDataPackRegistries.init();
         LithomeChunkGenerators.init();
         LithomeSurfaceRules.init();
+        LithomeCommandRegistration.init();
 
         CommonClass.init();
 
