@@ -20,6 +20,9 @@ loom {
             setConfigName('Fabric Client')
             ideConfigGenerated(true)
             runDir('runs/client')
+
+            property('lithome.performance.enabled', 'true')
+            property('lithome.performance.window', '128')
         }
         server {
             server()

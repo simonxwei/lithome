@@ -8,6 +8,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.simonxwei.lithome.Constants;
 import io.github.simonxwei.lithome.core.registries.LithomeBuiltInRegistries;
 import io.github.simonxwei.lithome.core.registries.LithomeRegistries;
+import io.github.simonxwei.lithome.world.level.levelgen.performance.LithomeWorldgenPerformance;
 import io.github.simonxwei.lithome.world.level.levelgen.synth.NoiseFractions;
 import io.github.simonxwei.lithome.world.level.lithome.Lithome;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeManager;
@@ -147,6 +148,7 @@ public final class LithomeVolumeRules {
         private final RandomState randomState;
         private final LithomeManager lithomeManager;
         private final WorldGenerationContext generationContext;
+        private final LithomeWorldgenPerformance.@Nullable VolumeSample performanceSample;
         private final Map<ResourceKey<NormalNoise.NoiseParameters>, DoubleSupplier> noiseSamplers2d = new HashMap<>();
         private final Map<ResourceKey<NormalNoise.NoiseParameters>, DoubleSupplier> noiseSamplers3d = new HashMap<>();
 
@@ -159,13 +161,23 @@ public final class LithomeVolumeRules {
         private @Nullable Holder<Lithome> cachedLithome;
 
         public Context(
-            final RandomState randomState,
-            final LithomeManager lithomeManager,
-            final WorldGenerationContext generationContext
+                final RandomState randomState,
+                final LithomeManager lithomeManager,
+                final WorldGenerationContext generationContext
+        ) {
+            this(randomState, lithomeManager, generationContext, null);
+        }
+
+        public Context(
+                final RandomState randomState,
+                final LithomeManager lithomeManager,
+                final WorldGenerationContext generationContext,
+                final LithomeWorldgenPerformance.@Nullable VolumeSample performanceSample
         ) {
             this.randomState = randomState;
             this.lithomeManager = lithomeManager;
             this.generationContext = generationContext;
+            this.performanceSample = performanceSample;
         }
 
         public void updateXZ(final int blockX, final int blockZ) {
@@ -184,9 +196,14 @@ public final class LithomeVolumeRules {
 
         public Holder<Lithome> currentLithome() {
             if (this.cachedLithome == null || this.cachedLithomeUpdateY != this.lastUpdateY) {
+                if (this.performanceSample != null) {
+                    this.performanceSample.incrementLithomeQueries();
+                }
+
                 this.cachedLithome = this.lithomeManager.getLithome(this.blockX, this.blockY, this.blockZ);
                 this.cachedLithomeUpdateY = this.lastUpdateY;
             }
+
             return this.cachedLithome;
         }
 
@@ -218,6 +235,10 @@ public final class LithomeVolumeRules {
                 @Override
                 public double getAsDouble() {
                     if (this.sampledAtXZ != Context.this.lastUpdateXZ) {
+                        if (Context.this.performanceSample != null) {
+                            Context.this.performanceSample.incrementNoiseSamples2d();
+                        }
+
                         this.value = noise.getValue(Context.this.blockX, 0.0D, Context.this.blockZ);
                         this.sampledAtXZ = Context.this.lastUpdateXZ;
                     }
@@ -237,10 +258,14 @@ public final class LithomeVolumeRules {
                 @Override
                 public double getAsDouble() {
                     if (this.sampledAtY != Context.this.lastUpdateY) {
+                        if (Context.this.performanceSample != null) {
+                            Context.this.performanceSample.incrementNoiseSamples3d();
+                        }
+
                         this.value = noise.getValue(
-                            Context.this.blockX,
-                            Context.this.blockY,
-                            Context.this.blockZ
+                                Context.this.blockX,
+                                Context.this.blockY,
+                                Context.this.blockZ
                         );
                         this.sampledAtY = Context.this.lastUpdateY;
                     }

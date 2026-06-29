@@ -3,18 +3,24 @@ package io.github.simonxwei.lithome.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+
 import com.mojang.serialization.MapCodec;
+
 import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkAccess;
 import io.github.simonxwei.lithome.world.level.chunk.LithomeChunkGenerators;
 import io.github.simonxwei.lithome.world.level.levelgen.LithomeNoiseBasedChunkGeneratorExtension;
 import io.github.simonxwei.lithome.world.level.levelgen.LithomeNoiseGeneratorSettings;
+import io.github.simonxwei.lithome.world.level.levelgen.performance.LithomeWorldgenPerformance;
 import io.github.simonxwei.lithome.world.level.levelgen.volume.LithomeVolumeSystem;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeClimateSampler;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSource;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSourceProvider;
+
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
+
 import net.minecraft.server.level.WorldGenRegion;
+
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
@@ -27,7 +33,9 @@ import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import net.minecraft.world.level.levelgen.blending.Blender;
+
 import org.jspecify.annotations.Nullable;
+
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -47,17 +55,14 @@ import java.util.Set;
 public abstract class NoiseBasedChunkGeneratorMixin implements
     LithomeSourceProvider,
     LithomeNoiseBasedChunkGeneratorExtension {
-
     @Shadow
     @Final
     private Holder<NoiseGeneratorSettings> settings;
 
     @Unique
     private volatile @Nullable LithomeSource lithome$source;
-
     @Unique
     private volatile @Nullable Holder<LithomeNoiseGeneratorSettings> lithome$noiseSettings;
-
     @Unique
     private volatile @Nullable LithomeSamplerCache lithome$samplerCache;
 
@@ -94,10 +99,15 @@ public abstract class NoiseBasedChunkGeneratorMixin implements
             return;
         }
 
-        ((LithomeChunkAccess) chunk).lithome$fillLithomesFromNoise(
-            this.lithome$getConfiguredLithomeSource(),
-            this.lithome$getOrCreateSampler(randomState, sampler)
-        );
+        final long performanceStartedAt = LithomeWorldgenPerformance.beginBiomes();
+        try {
+            ((LithomeChunkAccess) chunk).lithome$fillLithomesFromNoise(
+                this.lithome$getConfiguredLithomeSource(),
+                this.lithome$getOrCreateSampler(randomState, sampler)
+            );
+        } finally {
+            LithomeWorldgenPerformance.finishBiomes(chunk.getPos(), performanceStartedAt);
+        }
     }
 
     @WrapOperation(
@@ -168,6 +178,7 @@ public abstract class NoiseBasedChunkGeneratorMixin implements
         if (lithomeSource == null) {
             throw new IllegalStateException("NoiseBasedChunkGenerator has no configured LithomeSource");
         }
+
         return lithomeSource;
     }
 
@@ -177,6 +188,7 @@ public abstract class NoiseBasedChunkGeneratorMixin implements
         if (noiseSettings == null) {
             throw new IllegalStateException("NoiseBasedChunkGenerator has no configured Lithome noise settings");
         }
+
         return noiseSettings;
     }
 
@@ -207,6 +219,7 @@ public abstract class NoiseBasedChunkGeneratorMixin implements
                 this.lithome$samplerCache = cache;
             }
         }
+
         return cache.sampler();
     }
 
