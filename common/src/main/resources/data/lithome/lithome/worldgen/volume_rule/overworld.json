@@ -1,0 +1,18 @@
+{
+  "type": "lithome:sequence",
+  "sequence": [
+    {
+      "type": "lithome:condition",
+      "if_true": {
+        "type": "lithome:lithome",
+        "lithome_is": [
+          "lithome:stone"
+        ]
+      },
+      "then_run": "lithome:common/stone_inclusions"
+    },
+    {
+      "type": "lithome:lithome_default_state"
+    }
+  ]
+}

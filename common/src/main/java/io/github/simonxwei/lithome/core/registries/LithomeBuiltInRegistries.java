@@ -4,9 +4,9 @@ import com.google.common.collect.Maps;
 import com.mojang.serialization.Lifecycle;
 import com.mojang.serialization.MapCodec;
 import io.github.simonxwei.lithome.Constants;
+import io.github.simonxwei.lithome.world.level.levelgen.volume.LithomeVolumeRules;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSource;
 import io.github.simonxwei.lithome.world.level.lithome.LithomeSources;
-import io.github.simonxwei.lithome.world.level.levelgen.volume.LithomeVolumeRules;
 import net.minecraft.core.DefaultedRegistry;
 import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.RegistrationInfo;
@@ -26,14 +26,13 @@ import java.util.function.Supplier;
  * @author simonxwei
  */
 public final class LithomeBuiltInRegistries {
-
     private static final Map<Identifier, Supplier<?>> LOADERS;
-    private static final WritableRegistry<WritableRegistry<?>> WRITABLE_REGISTRY;
+    private static final WritableRegistry<Registry<?>> WRITABLE_REGISTRY;
 
     public static final Registry<MapCodec<? extends LithomeSource>> LITHOME_SOURCE;
     public static final Registry<MapCodec<? extends LithomeVolumeRules.ConditionSource>> MATERIAL_CONDITION;
     public static final Registry<MapCodec<? extends LithomeVolumeRules.RuleSource>> MATERIAL_RULE;
-    public static final Registry<? extends Registry<?>> REGISTRY;
+    public static final Registry<Registry<?>> REGISTRY;
 
     private LithomeBuiltInRegistries() {}
 
@@ -41,13 +40,16 @@ public final class LithomeBuiltInRegistries {
 
     public static void bootstrap() {
         createContents();
-        freeze();
+        freezeStaticRegistries();
         validate(REGISTRY);
     }
 
     // core
 
-    private static <T> Registry<T> registerSimple(final ResourceKey<? extends Registry<T>> name, final RegistryBootstrap<T> loader) {
+    private static <T> Registry<T> registerSimple(
+            final ResourceKey<Registry<T>> name,
+            final RegistryBootstrap<T> loader
+    ) {
         return internalRegister(name, new MappedRegistry<>(name, Lifecycle.stable(), false), loader);
     }
 
@@ -59,11 +61,16 @@ public final class LithomeBuiltInRegistries {
         });
     }
 
-    private static void freeze() {
+    private static void freezeStaticRegistries() {
         REGISTRY.freeze();
         for (final Registry<?> registry : REGISTRY) {
             bindBootstrappedTagsToEmpty(registry);
-            registry.freeze();
+
+            // These two type registries are the public extension points for addon mods.
+            // They intentionally remain writable during mod initialization.
+            if (registry != MATERIAL_CONDITION && registry != MATERIAL_RULE) {
+                registry.freeze();
+            }
         }
     }
 
@@ -72,16 +79,24 @@ public final class LithomeBuiltInRegistries {
             if (registry.keySet().isEmpty()) {
                 Util.logAndPauseIfInIde("Registry '" + rootRegistry.getKey(registry) + "' was empty after loading");
             }
+
             if (registry instanceof DefaultedRegistry<?> defaultedRegistry) {
                 final Identifier defaultKey = defaultedRegistry.getDefaultKey();
-                Objects.requireNonNull(registry.getValue(defaultKey), "Missing default of DefaultedMappedRegistry: " + defaultKey);
+                Objects.requireNonNull(
+                        registry.getValue(defaultKey),
+                        "Missing default of DefaultedMappedRegistry: " + defaultKey
+                );
             }
         });
     }
 
     // custom
 
-    private static <T, R extends WritableRegistry<T>> R internalRegister(final ResourceKey<? extends Registry<T>> name, final R registry, final RegistryBootstrap<T> loader) {
+    private static <T, R extends WritableRegistry<T>> R internalRegister(
+            final ResourceKey<Registry<T>> name,
+            final R registry,
+            final RegistryBootstrap<T> loader
+    ) {
         final Identifier key = name.identifier();
         Bootstrap.checkBootstrapCalled(() -> "registry " + key);
         LOADERS.put(key, () -> loader.run(registry));
@@ -90,21 +105,32 @@ public final class LithomeBuiltInRegistries {
     }
 
     @SuppressWarnings("unchecked")
-    private static ResourceKey<WritableRegistry<?>> castRootEntryKey(final ResourceKey<?> key) {
-        return (ResourceKey<WritableRegistry<?>>) key;
+    private static <T> ResourceKey<Registry<?>> castRootEntryKey(final ResourceKey<Registry<T>> key) {
+        return (ResourceKey<Registry<?>>) (ResourceKey<?>) key;
     }
 
-    @SuppressWarnings({"rawtypes"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private static void bindBootstrappedTagsToEmpty(final Registry<?> registry) {
         ((MappedRegistry) registry).bindAllTagsToEmpty();
     }
 
     static {
         LOADERS = Maps.newLinkedHashMap();
-        WRITABLE_REGISTRY = new MappedRegistry<>(ResourceKey.createRegistryKey(LithomeRegistries.ROOT_REGISTRY_NAME), Lifecycle.stable());
+        WRITABLE_REGISTRY = new MappedRegistry<>(
+                ResourceKey.createRegistryKey(LithomeRegistries.ROOT_REGISTRY_NAME),
+                Lifecycle.stable()
+        );
+
         LITHOME_SOURCE = registerSimple(LithomeRegistries.LITHOME_SOURCE, LithomeSources::bootstrap);
-        MATERIAL_CONDITION = registerSimple(LithomeRegistries.MATERIAL_CONDITION, LithomeVolumeRules::bootstrapConditions);
-        MATERIAL_RULE = registerSimple(LithomeRegistries.MATERIAL_RULE, LithomeVolumeRules::bootstrapRules);
+        MATERIAL_CONDITION = registerSimple(
+                LithomeRegistries.MATERIAL_CONDITION,
+                LithomeVolumeRules::bootstrapConditions
+        );
+        MATERIAL_RULE = registerSimple(
+                LithomeRegistries.MATERIAL_RULE,
+                LithomeVolumeRules::bootstrapRules
+        );
+
         REGISTRY = WRITABLE_REGISTRY;
     }
 

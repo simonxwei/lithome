@@ -1,0 +1,25 @@
+{
+  "type": "lithome:inclusions",
+  "noise": "lithome:coarse_inclusions",
+  "target_fraction": 0.2,
+  "inclusion_rule": {
+    "type": "lithome:inclusions",
+    "noise": "lithome:nested_inclusions",
+    "target_fraction": 0.08,
+    "inclusion_rule": {
+      "type": "lithome:state",
+      "state": {
+        "Name": "minecraft:granite"
+      }
+    },
+    "host_rule": {
+      "type": "lithome:state",
+      "state": {
+        "Name": "minecraft:andesite"
+      }
+    }
+  },
+  "host_rule": {
+    "type": "lithome:lithome_default_state"
+  }
+}

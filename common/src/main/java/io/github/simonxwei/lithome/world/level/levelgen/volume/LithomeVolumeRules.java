@@ -17,6 +17,7 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryCodecs;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.RegistryFileCodec;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.RandomState;
@@ -25,9 +26,12 @@ import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import net.minecraft.world.level.levelgen.synth.NormalNoise;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.function.DoubleSupplier;
 import java.util.function.Function;
 
@@ -36,7 +40,6 @@ import java.util.function.Function;
  * @author simonxwei
  */
 public final class LithomeVolumeRules {
-
     private LithomeVolumeRules() {}
 
     public static RuleSource state(final BlockState state) {
@@ -59,10 +62,10 @@ public final class LithomeVolumeRules {
     }
 
     public static RuleSource inclusions(
-        final ResourceKey<NormalNoise.NoiseParameters> noise,
-        final float targetFraction,
-        final RuleSource inclusionRule,
-        final RuleSource hostRule
+            final ResourceKey<NormalNoise.NoiseParameters> noise,
+            final float targetFraction,
+            final RuleSource inclusionRule,
+            final RuleSource hostRule
     ) {
         return new InclusionsRuleSource(noise, targetFraction, inclusionRule, hostRule);
     }
@@ -72,17 +75,17 @@ public final class LithomeVolumeRules {
     }
 
     public static ConditionSource noiseThreshold(
-        final ResourceKey<NormalNoise.NoiseParameters> noise,
-        final double minThreshold,
-        final double maxThreshold,
-        final boolean is3d
+            final ResourceKey<NormalNoise.NoiseParameters> noise,
+            final double minThreshold,
+            final double maxThreshold,
+            final boolean is3d
     ) {
         return new NoiseThresholdConditionSource(noise, minThreshold, maxThreshold, is3d);
     }
 
     public static ConditionSource yRange(
-        final VerticalAnchor minInclusive,
-        final VerticalAnchor maxInclusive
+            final VerticalAnchor minInclusive,
+            final VerticalAnchor maxInclusive
     ) {
         return new YRangeConditionSource(minInclusive, maxInclusive);
     }
@@ -92,15 +95,15 @@ public final class LithomeVolumeRules {
     }
 
     private static <A> MapCodec<? extends A> register(
-        final Registry<MapCodec<? extends A>> registry,
-        final String name,
-        final MapCodec<? extends A> codec
+            final Registry<MapCodec<? extends A>> registry,
+            final String name,
+            final MapCodec<? extends A> codec
     ) {
         return Registry.register(registry, Constants.id(name), codec);
     }
 
     public static MapCodec<? extends RuleSource> bootstrapRules(
-        final Registry<MapCodec<? extends RuleSource>> registry
+            final Registry<MapCodec<? extends RuleSource>> registry
     ) {
         register(registry, "state", StateRuleSource.CODEC);
         register(registry, "lithome_default_state", LithomeDefaultStateRuleSource.CODEC);
@@ -110,7 +113,7 @@ public final class LithomeVolumeRules {
     }
 
     public static MapCodec<? extends ConditionSource> bootstrapConditions(
-        final Registry<MapCodec<? extends ConditionSource>> registry
+            final Registry<MapCodec<? extends ConditionSource>> registry
     ) {
         register(registry, "lithome", LithomeConditionSource.CODEC);
         register(registry, "noise_threshold", NoiseThresholdConditionSource.CODEC);
@@ -129,17 +132,28 @@ public final class LithomeVolumeRules {
     }
 
     public interface RuleSource extends Function<Context, VolumeRule> {
-        Codec<RuleSource> CODEC = LithomeBuiltInRegistries.MATERIAL_RULE
-            .byNameCodec()
-            .dispatch(RuleSource::codec, Function.identity());
+        Codec<RuleSource> DIRECT_CODEC = LithomeBuiltInRegistries.MATERIAL_RULE
+                .byNameCodec()
+                .dispatch(RuleSource::codec, Function.identity());
+
+        Codec<RuleSource> CODEC = RegistryFileCodec
+                .create(LithomeRegistries.VOLUME_RULE, DIRECT_CODEC)
+                .xmap(
+                        holder -> holder.unwrapKey().isPresent()
+                                ? new HolderRuleSource(holder)
+                                : holder.value(),
+                        source -> source instanceof HolderRuleSource holderSource
+                                ? holderSource.rule()
+                                : Holder.direct(source)
+                );
 
         MapCodec<? extends RuleSource> codec();
     }
 
     public interface ConditionSource extends Function<Context, VolumeCondition> {
         Codec<ConditionSource> CODEC = LithomeBuiltInRegistries.MATERIAL_CONDITION
-            .byNameCodec()
-            .dispatch(ConditionSource::codec, Function.identity());
+                .byNameCodec()
+                .dispatch(ConditionSource::codec, Function.identity());
 
         MapCodec<? extends ConditionSource> codec();
     }
@@ -151,6 +165,8 @@ public final class LithomeVolumeRules {
         private final LithomeWorldgenPerformance.@Nullable VolumeSample performanceSample;
         private final Map<ResourceKey<NormalNoise.NoiseParameters>, DoubleSupplier> noiseSamplers2d = new HashMap<>();
         private final Map<ResourceKey<NormalNoise.NoiseParameters>, DoubleSupplier> noiseSamplers3d = new HashMap<>();
+        private final Map<ResourceKey<RuleSource>, VolumeRule> boundRuleReferences = new HashMap<>();
+        private final List<ResourceKey<RuleSource>> bindingRuleReferences = new ArrayList<>();
 
         private int blockX;
         private int blockY;
@@ -180,7 +196,7 @@ public final class LithomeVolumeRules {
             this.performanceSample = performanceSample;
         }
 
-        public void updateXZ(final int blockX, final int blockZ) {
+        void updateXZ(final int blockX, final int blockZ) {
             ++this.lastUpdateXZ;
             ++this.lastUpdateY;
             this.blockX = blockX;
@@ -188,10 +204,30 @@ public final class LithomeVolumeRules {
             this.cachedLithome = null;
         }
 
-        public void updateY(final int blockY) {
+        void updateY(final int blockY) {
             ++this.lastUpdateY;
             this.blockY = blockY;
             this.cachedLithome = null;
+        }
+
+        public int blockX() {
+            return this.blockX;
+        }
+
+        public int blockY() {
+            return this.blockY;
+        }
+
+        public int blockZ() {
+            return this.blockZ;
+        }
+
+        public long xzUpdateId() {
+            return this.lastUpdateXZ;
+        }
+
+        public long positionUpdateId() {
+            return this.lastUpdateY;
         }
 
         public Holder<Lithome> currentLithome() {
@@ -199,33 +235,62 @@ public final class LithomeVolumeRules {
                 if (this.performanceSample != null) {
                     this.performanceSample.incrementLithomeQueries();
                 }
-
                 this.cachedLithome = this.lithomeManager.getLithome(this.blockX, this.blockY, this.blockZ);
                 this.cachedLithomeUpdateY = this.lastUpdateY;
             }
-
             return this.cachedLithome;
-        }
-
-        public int blockY() {
-            return this.blockY;
         }
 
         public WorldGenerationContext generationContext() {
             return this.generationContext;
         }
 
-        public DoubleSupplier noiseSampler(
-            final ResourceKey<NormalNoise.NoiseParameters> noiseKey,
-            final boolean is3d
+        public DoubleSupplier noiseSampler2d(
+                final ResourceKey<NormalNoise.NoiseParameters> noiseKey
         ) {
-            return is3d
-                ? this.noiseSamplers3d.computeIfAbsent(noiseKey, this::createNoiseSampler3d)
-                : this.noiseSamplers2d.computeIfAbsent(noiseKey, this::createNoiseSampler2d);
+            return this.noiseSamplers2d.computeIfAbsent(noiseKey, this::createNoiseSampler2d);
+        }
+
+        public DoubleSupplier noiseSampler3d(
+                final ResourceKey<NormalNoise.NoiseParameters> noiseKey
+        ) {
+            return this.noiseSamplers3d.computeIfAbsent(noiseKey, this::createNoiseSampler3d);
+        }
+
+        private VolumeRule bindRuleReference(
+                final ResourceKey<RuleSource> key,
+                final RuleSource source
+        ) {
+            final VolumeRule alreadyBound = this.boundRuleReferences.get(key);
+            if (alreadyBound != null) {
+                return alreadyBound;
+            }
+
+            final int cycleStart = this.bindingRuleReferences.indexOf(key);
+            if (cycleStart >= 0) {
+                final StringJoiner chain = new StringJoiner(" -> ");
+                for (int index = cycleStart; index < this.bindingRuleReferences.size(); ++index) {
+                    chain.add(this.bindingRuleReferences.get(index).identifier().toString());
+                }
+                chain.add(key.identifier().toString());
+                throw new IllegalStateException("Cyclic volume rule reference: " + chain);
+            }
+
+            this.bindingRuleReferences.add(key);
+            try {
+                final VolumeRule bound = Objects.requireNonNull(
+                        source.apply(this),
+                        () -> "Volume rule source returned null while binding " + key.identifier()
+                );
+                this.boundRuleReferences.put(key, bound);
+                return bound;
+            } finally {
+                this.bindingRuleReferences.removeLast();
+            }
         }
 
         private DoubleSupplier createNoiseSampler2d(
-            final ResourceKey<NormalNoise.NoiseParameters> noiseKey
+                final ResourceKey<NormalNoise.NoiseParameters> noiseKey
         ) {
             final NormalNoise noise = this.randomState.getOrCreateNoise(noiseKey);
             return new DoubleSupplier() {
@@ -238,7 +303,6 @@ public final class LithomeVolumeRules {
                         if (Context.this.performanceSample != null) {
                             Context.this.performanceSample.incrementNoiseSamples2d();
                         }
-
                         this.value = noise.getValue(Context.this.blockX, 0.0D, Context.this.blockZ);
                         this.sampledAtXZ = Context.this.lastUpdateXZ;
                     }
@@ -248,7 +312,7 @@ public final class LithomeVolumeRules {
         }
 
         private DoubleSupplier createNoiseSampler3d(
-            final ResourceKey<NormalNoise.NoiseParameters> noiseKey
+                final ResourceKey<NormalNoise.NoiseParameters> noiseKey
         ) {
             final NormalNoise noise = this.randomState.getOrCreateNoise(noiseKey);
             return new DoubleSupplier() {
@@ -261,7 +325,6 @@ public final class LithomeVolumeRules {
                         if (Context.this.performanceSample != null) {
                             Context.this.performanceSample.incrementNoiseSamples3d();
                         }
-
                         this.value = noise.getValue(
                                 Context.this.blockX,
                                 Context.this.blockY,
@@ -275,10 +338,24 @@ public final class LithomeVolumeRules {
         }
     }
 
+    private record HolderRuleSource(Holder<RuleSource> rule) implements RuleSource {
+        @Override
+        public MapCodec<? extends RuleSource> codec() {
+            throw new UnsupportedOperationException("Calling .codec() on HolderRuleSource");
+        }
+
+        @Override
+        public VolumeRule apply(final Context context) {
+            return this.rule.unwrapKey()
+                    .map(key -> context.bindRuleReference(key, this.rule.value()))
+                    .orElseGet(() -> this.rule.value().apply(context));
+        }
+    }
+
     private record StateRuleSource(BlockState state, VolumeRule rule) implements RuleSource {
         private static final MapCodec<StateRuleSource> CODEC = BlockState.CODEC
-            .xmap(StateRuleSource::new, StateRuleSource::state)
-            .fieldOf("state");
+                .xmap(StateRuleSource::new, StateRuleSource::state)
+                .fieldOf("state");
 
         private StateRuleSource(final BlockState state) {
             this(state, () -> state);
@@ -312,12 +389,12 @@ public final class LithomeVolumeRules {
     }
 
     private record TestRuleSource(
-        ConditionSource ifTrue,
-        RuleSource thenRun
+            ConditionSource ifTrue,
+            RuleSource thenRun
     ) implements RuleSource {
         private static final MapCodec<TestRuleSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ConditionSource.CODEC.fieldOf("if_true").forGetter(TestRuleSource::ifTrue),
-            RuleSource.CODEC.fieldOf("then_run").forGetter(TestRuleSource::thenRun)
+                ConditionSource.CODEC.fieldOf("if_true").forGetter(TestRuleSource::ifTrue),
+                RuleSource.CODEC.fieldOf("then_run").forGetter(TestRuleSource::thenRun)
         ).apply(instance, TestRuleSource::new));
 
         @Override
@@ -335,14 +412,13 @@ public final class LithomeVolumeRules {
 
     private record SequenceRuleSource(List<RuleSource> sequence) implements RuleSource {
         private static final Codec<List<RuleSource>> NON_EMPTY_SEQUENCE_CODEC = RuleSource.CODEC
-            .listOf()
-            .validate(sequence -> sequence.isEmpty()
-                ? DataResult.error(() -> "A Lithome volume-rule sequence must contain at least one rule")
-                : DataResult.success(sequence));
-
+                .listOf()
+                .validate(sequence -> sequence.isEmpty()
+                        ? DataResult.error(() -> "A Lithome volume-rule sequence must contain at least one rule")
+                        : DataResult.success(sequence));
         private static final MapCodec<SequenceRuleSource> CODEC = NON_EMPTY_SEQUENCE_CODEC
-            .xmap(SequenceRuleSource::new, SequenceRuleSource::sequence)
-            .fieldOf("sequence");
+                .xmap(SequenceRuleSource::new, SequenceRuleSource::sequence)
+                .fieldOf("sequence");
 
         private SequenceRuleSource {
             sequence = List.copyOf(sequence);
@@ -363,8 +439,8 @@ public final class LithomeVolumeRules {
             for (final RuleSource rule : this.sequence) {
                 builder.add(rule.apply(context));
             }
-            final List<VolumeRule> rules = builder.build();
 
+            final List<VolumeRule> rules = builder.build();
             return () -> {
                 for (final VolumeRule rule : rules) {
                     final BlockState result = rule.tryApply();
@@ -378,24 +454,24 @@ public final class LithomeVolumeRules {
     }
 
     private record InclusionsRuleSource(
-        ResourceKey<NormalNoise.NoiseParameters> noise,
-        float targetFraction,
-        RuleSource inclusionRule,
-        RuleSource hostRule
+            ResourceKey<NormalNoise.NoiseParameters> noise,
+            float targetFraction,
+            RuleSource inclusionRule,
+            RuleSource hostRule
     ) implements RuleSource {
         private static final MapCodec<InclusionsRuleSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ResourceKey.codec(Registries.NOISE)
-                .fieldOf("noise")
-                .forGetter(InclusionsRuleSource::noise),
-            Codec.floatRange(0.0F, 1.0F)
-                .fieldOf("target_fraction")
-                .forGetter(InclusionsRuleSource::targetFraction),
-            RuleSource.CODEC
-                .fieldOf("inclusion_rule")
-                .forGetter(InclusionsRuleSource::inclusionRule),
-            RuleSource.CODEC
-                .fieldOf("host_rule")
-                .forGetter(InclusionsRuleSource::hostRule)
+                ResourceKey.codec(Registries.NOISE)
+                        .fieldOf("noise")
+                        .forGetter(InclusionsRuleSource::noise),
+                Codec.floatRange(0.0F, 1.0F)
+                        .fieldOf("target_fraction")
+                        .forGetter(InclusionsRuleSource::targetFraction),
+                RuleSource.CODEC
+                        .fieldOf("inclusion_rule")
+                        .forGetter(InclusionsRuleSource::inclusionRule),
+                RuleSource.CODEC
+                        .fieldOf("host_rule")
+                        .forGetter(InclusionsRuleSource::hostRule)
         ).apply(instance, InclusionsRuleSource::new));
 
         @Override
@@ -405,22 +481,21 @@ public final class LithomeVolumeRules {
 
         @Override
         public VolumeRule apply(final Context context) {
-            final DoubleSupplier noiseSampler = context.noiseSampler(this.noise, true);
+            final DoubleSupplier noiseSampler = context.noiseSampler3d(this.noise);
             final double threshold = NoiseFractions.upperTailThreshold(this.targetFraction);
             final VolumeRule inclusion = this.inclusionRule.apply(context);
             final VolumeRule host = this.hostRule.apply(context);
-
             return () -> (noiseSampler.getAsDouble() >= threshold ? inclusion : host).tryApply();
         }
     }
 
     private record LithomeConditionSource(
-        HolderSet<Lithome> lithomes
+            HolderSet<Lithome> lithomes
     ) implements ConditionSource {
         private static final MapCodec<LithomeConditionSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            RegistryCodecs.homogeneousList(LithomeRegistries.LITHOME)
-                .fieldOf("lithome_is")
-                .forGetter(LithomeConditionSource::lithomes)
+                RegistryCodecs.homogeneousList(LithomeRegistries.LITHOME)
+                        .fieldOf("lithome_is")
+                        .forGetter(LithomeConditionSource::lithomes)
         ).apply(instance, LithomeConditionSource::new));
 
         @Override
@@ -430,29 +505,34 @@ public final class LithomeVolumeRules {
 
         @Override
         public VolumeCondition apply(final Context context) {
-            return () -> this.lithomes.contains(context.currentLithome());
+            return new LithomeLazyPositionCondition(context) {
+                @Override
+                protected boolean compute() {
+                    return LithomeConditionSource.this.lithomes.contains(context.currentLithome());
+                }
+            };
         }
     }
 
     private record NoiseThresholdConditionSource(
-        ResourceKey<NormalNoise.NoiseParameters> noise,
-        double minThreshold,
-        double maxThreshold,
-        boolean is3d
+            ResourceKey<NormalNoise.NoiseParameters> noise,
+            double minThreshold,
+            double maxThreshold,
+            boolean is3d
     ) implements ConditionSource {
         private static final MapCodec<NoiseThresholdConditionSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ResourceKey.codec(Registries.NOISE)
-                .fieldOf("noise")
-                .forGetter(NoiseThresholdConditionSource::noise),
-            Codec.DOUBLE
-                .fieldOf("min_threshold")
-                .forGetter(NoiseThresholdConditionSource::minThreshold),
-            Codec.DOUBLE
-                .fieldOf("max_threshold")
-                .forGetter(NoiseThresholdConditionSource::maxThreshold),
-            Codec.BOOL
-                .optionalFieldOf("is_3d", true)
-                .forGetter(NoiseThresholdConditionSource::is3d)
+                ResourceKey.codec(Registries.NOISE)
+                        .fieldOf("noise")
+                        .forGetter(NoiseThresholdConditionSource::noise),
+                Codec.DOUBLE
+                        .fieldOf("min_threshold")
+                        .forGetter(NoiseThresholdConditionSource::minThreshold),
+                Codec.DOUBLE
+                        .fieldOf("max_threshold")
+                        .forGetter(NoiseThresholdConditionSource::maxThreshold),
+                Codec.BOOL
+                        .optionalFieldOf("is_3d", true)
+                        .forGetter(NoiseThresholdConditionSource::is3d)
         ).apply(instance, NoiseThresholdConditionSource::new));
 
         private NoiseThresholdConditionSource {
@@ -468,25 +548,41 @@ public final class LithomeVolumeRules {
 
         @Override
         public VolumeCondition apply(final Context context) {
-            final DoubleSupplier noiseSampler = context.noiseSampler(this.noise, this.is3d);
-            return () -> {
-                final double value = noiseSampler.getAsDouble();
-                return value >= this.minThreshold && value <= this.maxThreshold;
+            if (this.is3d) {
+                final DoubleSupplier noiseSampler = context.noiseSampler3d(this.noise);
+                return new LithomeLazyPositionCondition(context) {
+                    @Override
+                    protected boolean compute() {
+                        final double value = noiseSampler.getAsDouble();
+                        return value >= NoiseThresholdConditionSource.this.minThreshold
+                                && value <= NoiseThresholdConditionSource.this.maxThreshold;
+                    }
+                };
+            }
+
+            final DoubleSupplier noiseSampler = context.noiseSampler2d(this.noise);
+            return new LithomeLazyXZCondition(context) {
+                @Override
+                protected boolean compute() {
+                    final double value = noiseSampler.getAsDouble();
+                    return value >= NoiseThresholdConditionSource.this.minThreshold
+                            && value <= NoiseThresholdConditionSource.this.maxThreshold;
+                }
             };
         }
     }
 
     private record YRangeConditionSource(
-        VerticalAnchor minInclusive,
-        VerticalAnchor maxInclusive
+            VerticalAnchor minInclusive,
+            VerticalAnchor maxInclusive
     ) implements ConditionSource {
         private static final MapCodec<YRangeConditionSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            VerticalAnchor.CODEC
-                .fieldOf("min_inclusive")
-                .forGetter(YRangeConditionSource::minInclusive),
-            VerticalAnchor.CODEC
-                .fieldOf("max_inclusive")
-                .forGetter(YRangeConditionSource::maxInclusive)
+                VerticalAnchor.CODEC
+                        .fieldOf("min_inclusive")
+                        .forGetter(YRangeConditionSource::minInclusive),
+                VerticalAnchor.CODEC
+                        .fieldOf("max_inclusive")
+                        .forGetter(YRangeConditionSource::maxInclusive)
         ).apply(instance, YRangeConditionSource::new));
 
         @Override
@@ -501,14 +597,20 @@ public final class LithomeVolumeRules {
             if (minimumY > maximumY) {
                 throw new IllegalStateException("Resolved min_inclusive is above max_inclusive");
             }
-            return () -> context.blockY() >= minimumY && context.blockY() <= maximumY;
+
+            return new LithomeLazyPositionCondition(context) {
+                @Override
+                protected boolean compute() {
+                    return context.blockY() >= minimumY && context.blockY() <= maximumY;
+                }
+            };
         }
     }
 
     private record NotConditionSource(ConditionSource target) implements ConditionSource {
         private static final MapCodec<NotConditionSource> CODEC = ConditionSource.CODEC
-            .xmap(NotConditionSource::new, NotConditionSource::target)
-            .fieldOf("invert");
+                .xmap(NotConditionSource::new, NotConditionSource::target)
+                .fieldOf("invert");
 
         @Override
         public MapCodec<NotConditionSource> codec() {

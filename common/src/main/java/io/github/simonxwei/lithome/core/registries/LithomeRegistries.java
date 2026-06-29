@@ -16,13 +16,15 @@ import net.minecraft.resources.ResourceKey;
  * @author simonxwei
  */
 public final class LithomeRegistries {
-
     public static final Identifier ROOT_REGISTRY_NAME;
+
     public static final ResourceKey<Registry<MapCodec<? extends LithomeSource>>> LITHOME_SOURCE;
     public static final ResourceKey<Registry<MapCodec<? extends LithomeVolumeRules.ConditionSource>>> MATERIAL_CONDITION;
     public static final ResourceKey<Registry<MapCodec<? extends LithomeVolumeRules.RuleSource>>> MATERIAL_RULE;
+
     public static final ResourceKey<Registry<Lithome>> LITHOME;
     public static final ResourceKey<Registry<MultiNoiseLithomeSourceParameterList>> MULTI_NOISE_LITHOME_SOURCE_PARAMETER_LIST;
+    public static final ResourceKey<Registry<LithomeVolumeRules.RuleSource>> VOLUME_RULE;
     public static final ResourceKey<Registry<LithomeNoiseGeneratorSettings>> NOISE_SETTINGS;
 
     private LithomeRegistries() {}
@@ -35,11 +37,14 @@ public final class LithomeRegistries {
 
     static {
         ROOT_REGISTRY_NAME = Constants.id("root");
+
         LITHOME_SOURCE = createRegistryKey("worldgen/lithome_source");
         MATERIAL_CONDITION = createRegistryKey("worldgen/material_condition");
         MATERIAL_RULE = createRegistryKey("worldgen/material_rule");
+
         LITHOME = createRegistryKey("worldgen/lithome");
         MULTI_NOISE_LITHOME_SOURCE_PARAMETER_LIST = createRegistryKey("worldgen/multi_noise_lithome_source_parameter_list");
+        VOLUME_RULE = createRegistryKey("worldgen/volume_rule");
         NOISE_SETTINGS = createRegistryKey("worldgen/noise_settings");
     }
 }
