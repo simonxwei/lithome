@@ -1,0 +1,50 @@
+{
+  "type": "lithome:sequence",
+  "sequence": [
+    {
+      "type": "lithome:condition",
+      "if_true": {
+        "type": "lithome:y_range",
+        "min_inclusive": { "absolute": -64 },
+        "max_inclusive": { "absolute": 192 }
+      },
+      "then_run": {
+        "type": "lithome:strata",
+        "base_y": { "absolute": 0 },
+        "layers": [
+          {
+            "thickness": 5,
+            "rule": {
+              "type": "lithome:state",
+              "state": { "Name": "minecraft:stone" }
+            }
+          },
+          {
+            "thickness": 7,
+            "rule": {
+              "type": "lithome:state",
+              "state": { "Name": "minecraft:andesite" }
+            }
+          },
+          {
+            "thickness": 6,
+            "rule": {
+              "type": "lithome:state",
+              "state": { "Name": "minecraft:diorite" }
+            }
+          },
+          {
+            "thickness": 8,
+            "rule": {
+              "type": "lithome:state",
+              "state": { "Name": "minecraft:granite" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "lithome:lithome_default_state"
+    }
+  ]
+}

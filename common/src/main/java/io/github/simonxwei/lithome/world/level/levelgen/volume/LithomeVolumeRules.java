@@ -109,6 +109,7 @@ public final class LithomeVolumeRules {
         register(registry, "lithome_default_state", LithomeDefaultStateRuleSource.CODEC);
         register(registry, "sequence", SequenceRuleSource.CODEC);
         register(registry, "condition", TestRuleSource.CODEC);
+        register(registry, "strata", LithomeStrataRuleSource.CODEC);
         return register(registry, "inclusions", InclusionsRuleSource.CODEC);
     }
 

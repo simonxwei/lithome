@@ -9,7 +9,7 @@
           "lithome:stone"
         ]
       },
-      "then_run": "lithome:common/stone_inclusions"
+      "then_run": "lithome:test/strata_horizontal"
     },
     {
       "type": "lithome:lithome_default_state"
