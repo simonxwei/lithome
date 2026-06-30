@@ -23,7 +23,8 @@ import java.util.function.DoubleSupplier;
  * - net.minecraft.world.level.levelgen.SurfaceRules
  * - net.minecraft.world.level.levelgen.synth.NormalNoise
  *
- * 周期层状体积规则。二维噪声负责整列层面起伏，三维噪声负责局部边界扰动。
+ * 周期层状体积规则。undulation 负责大尺度二维整体起伏，detail_undulation
+ * 负责小尺度二维边界细节，disturbance 负责随高度变化的三维局部扰动。
  * 每个层条目持有完整的 Lithome RuleSource，因此可以继续嵌套 inclusions、
  * condition 或命名 volume_rule 引用。
  *
@@ -32,6 +33,7 @@ import java.util.function.DoubleSupplier;
 public record LithomeStrataRuleSource(
     VerticalAnchor baseY,
     Optional<NoiseOffset> undulation,
+    Optional<NoiseOffset> detailUndulation,
     Optional<NoiseOffset> disturbance,
     List<Layer> layers
 ) implements LithomeVolumeRules.RuleSource {
@@ -48,6 +50,9 @@ public record LithomeStrataRuleSource(
             .optionalFieldOf("undulation")
             .forGetter(LithomeStrataRuleSource::undulation),
         NoiseOffset.CODEC
+            .optionalFieldOf("detail_undulation")
+            .forGetter(LithomeStrataRuleSource::detailUndulation),
+        NoiseOffset.CODEC
             .optionalFieldOf("disturbance")
             .forGetter(LithomeStrataRuleSource::disturbance),
         LAYERS_CODEC
@@ -58,6 +63,7 @@ public record LithomeStrataRuleSource(
     public LithomeStrataRuleSource {
         Objects.requireNonNull(baseY, "baseY");
         Objects.requireNonNull(undulation, "undulation");
+        Objects.requireNonNull(detailUndulation, "detailUndulation");
         Objects.requireNonNull(disturbance, "disturbance");
         Objects.requireNonNull(layers, "layers");
 
@@ -78,11 +84,16 @@ public record LithomeStrataRuleSource(
         final int resolvedBaseY = this.baseY.resolveY(context.generationContext());
 
         final NoiseOffset undulationConfig = this.undulation.orElse(null);
+        final NoiseOffset detailUndulationConfig = this.detailUndulation.orElse(null);
         final NoiseOffset disturbanceConfig = this.disturbance.orElse(null);
 
         final DoubleSupplier undulationSampler = undulationConfig == null || undulationConfig.amplitude() == 0.0D
             ? null
             : context.noiseSampler2d(undulationConfig.noise());
+        final DoubleSupplier detailUndulationSampler = detailUndulationConfig == null
+            || detailUndulationConfig.amplitude() == 0.0D
+            ? null
+            : context.noiseSampler2d(detailUndulationConfig.noise());
         final DoubleSupplier disturbanceSampler = disturbanceConfig == null || disturbanceConfig.amplitude() == 0.0D
             ? null
             : context.noiseSampler3d(disturbanceConfig.noise());
@@ -105,6 +116,9 @@ public record LithomeStrataRuleSource(
 
             if (undulationSampler != null) {
                 localLayerPosition += undulationSampler.getAsDouble() * undulationConfig.amplitude();
+            }
+            if (detailUndulationSampler != null) {
+                localLayerPosition += detailUndulationSampler.getAsDouble() * detailUndulationConfig.amplitude();
             }
             if (disturbanceSampler != null) {
                 localLayerPosition += disturbanceSampler.getAsDouble() * disturbanceConfig.amplitude();
