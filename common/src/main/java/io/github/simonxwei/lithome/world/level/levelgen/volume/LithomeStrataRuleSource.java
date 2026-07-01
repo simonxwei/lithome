@@ -4,7 +4,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.levelgen.VerticalAnchor;
@@ -23,55 +22,76 @@ import java.util.function.DoubleSupplier;
  * - net.minecraft.world.level.levelgen.SurfaceRules
  * - net.minecraft.world.level.levelgen.synth.NormalNoise
  *
- * 周期层状体积规则。undulation 负责大尺度二维整体起伏，detail_undulation
- * 负责小尺度二维边界细节，disturbance 负责随高度变化的三维局部扰动。
+ * 周期层状体积规则。
+ *
+ * 层位字段按职责分为：
+ * - base_y：层组在世界原点处的基础层位；
+ * - linear_gradient：确定性的水平线性梯度，使层面沿指定方向持续抬升或沉降；
+ * - undulation：大尺度二维整体起伏；
+ * - detail_undulation：小尺度二维边界细节；
+ * - disturbance：随高度变化的三维局部扰动。
+ *
  * 每个层条目持有完整的 Lithome RuleSource，因此可以继续嵌套 inclusions、
  * condition 或命名 volume_rule 引用。
  *
  * @author simonxwei
  */
 public record LithomeStrataRuleSource(
-    VerticalAnchor baseY,
-    Optional<NoiseOffset> undulation,
-    Optional<NoiseOffset> detailUndulation,
-    Optional<NoiseOffset> disturbance,
-    List<Layer> layers
+        VerticalAnchor baseY,
+        Optional<LinearGradient> linearGradient,
+        Optional<NoiseOffset> undulation,
+        Optional<NoiseOffset> detailUndulation,
+        Optional<NoiseOffset> disturbance,
+        List<Layer> layers
 ) implements LithomeVolumeRules.RuleSource {
-
     private static final Codec<List<Layer>> LAYERS_CODEC = Layer.CODEC
-        .listOf()
-        .validate(LithomeStrataRuleSource::validateLayers);
+            .listOf()
+            .validate(LithomeStrataRuleSource::validateLayers);
 
     public static final MapCodec<LithomeStrataRuleSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-        VerticalAnchor.CODEC
-            .fieldOf("base_y")
-            .forGetter(LithomeStrataRuleSource::baseY),
-        NoiseOffset.CODEC
-            .optionalFieldOf("undulation")
-            .forGetter(LithomeStrataRuleSource::undulation),
-        NoiseOffset.CODEC
-            .optionalFieldOf("detail_undulation")
-            .forGetter(LithomeStrataRuleSource::detailUndulation),
-        NoiseOffset.CODEC
-            .optionalFieldOf("disturbance")
-            .forGetter(LithomeStrataRuleSource::disturbance),
-        LAYERS_CODEC
-            .fieldOf("layers")
-            .forGetter(LithomeStrataRuleSource::layers)
+            VerticalAnchor.CODEC
+                    .fieldOf("base_y")
+                    .forGetter(LithomeStrataRuleSource::baseY),
+            LinearGradient.CODEC
+                    .optionalFieldOf("linear_gradient")
+                    .forGetter(LithomeStrataRuleSource::linearGradient),
+            NoiseOffset.CODEC
+                    .optionalFieldOf("undulation")
+                    .forGetter(LithomeStrataRuleSource::undulation),
+            NoiseOffset.CODEC
+                    .optionalFieldOf("detail_undulation")
+                    .forGetter(LithomeStrataRuleSource::detailUndulation),
+            NoiseOffset.CODEC
+                    .optionalFieldOf("disturbance")
+                    .forGetter(LithomeStrataRuleSource::disturbance),
+            LAYERS_CODEC
+                    .fieldOf("layers")
+                    .forGetter(LithomeStrataRuleSource::layers)
     ).apply(instance, LithomeStrataRuleSource::new));
 
     public LithomeStrataRuleSource {
         Objects.requireNonNull(baseY, "baseY");
+        Objects.requireNonNull(linearGradient, "linearGradient");
         Objects.requireNonNull(undulation, "undulation");
         Objects.requireNonNull(detailUndulation, "detailUndulation");
         Objects.requireNonNull(disturbance, "disturbance");
         Objects.requireNonNull(layers, "layers");
-
         layers = List.copyOf(layers);
+
         final DataResult<List<Layer>> validation = validateLayers(layers);
         validation.error().ifPresent(error -> {
             throw new IllegalArgumentException(error.message());
         });
+    }
+
+    public LithomeStrataRuleSource(
+            final VerticalAnchor baseY,
+            final Optional<NoiseOffset> undulation,
+            final Optional<NoiseOffset> detailUndulation,
+            final Optional<NoiseOffset> disturbance,
+            final List<Layer> layers
+    ) {
+        this(baseY, Optional.empty(), undulation, detailUndulation, disturbance, layers);
     }
 
     @Override
@@ -83,20 +103,22 @@ public record LithomeStrataRuleSource(
     public LithomeVolumeRules.VolumeRule apply(final LithomeVolumeRules.Context context) {
         final int resolvedBaseY = this.baseY.resolveY(context.generationContext());
 
+        final LinearGradient linearGradientConfig = this.linearGradient.orElse(null);
         final NoiseOffset undulationConfig = this.undulation.orElse(null);
         final NoiseOffset detailUndulationConfig = this.detailUndulation.orElse(null);
         final NoiseOffset disturbanceConfig = this.disturbance.orElse(null);
 
+        final DoubleSupplier linearGradientSampler = createLinearGradientSampler(context, linearGradientConfig);
         final DoubleSupplier undulationSampler = undulationConfig == null || undulationConfig.amplitude() == 0.0D
-            ? null
-            : context.noiseSampler2d(undulationConfig.noise());
+                ? null
+                : context.noiseSampler2d(undulationConfig.noise());
         final DoubleSupplier detailUndulationSampler = detailUndulationConfig == null
-            || detailUndulationConfig.amplitude() == 0.0D
-            ? null
-            : context.noiseSampler2d(detailUndulationConfig.noise());
+                || detailUndulationConfig.amplitude() == 0.0D
+                ? null
+                : context.noiseSampler2d(detailUndulationConfig.noise());
         final DoubleSupplier disturbanceSampler = disturbanceConfig == null || disturbanceConfig.amplitude() == 0.0D
-            ? null
-            : context.noiseSampler3d(disturbanceConfig.noise());
+                ? null
+                : context.noiseSampler3d(disturbanceConfig.noise());
 
         final int layerCount = this.layers.size();
         final int[] cumulativeThickness = new int[layerCount];
@@ -109,11 +131,14 @@ public record LithomeStrataRuleSource(
             cumulativeThickness[index] = totalThickness;
             boundRules[index] = layer.rule().apply(context);
         }
-
         final int period = totalThickness;
+
         return () -> {
             double localLayerPosition = context.blockY() - resolvedBaseY;
 
+            if (linearGradientSampler != null) {
+                localLayerPosition -= linearGradientSampler.getAsDouble();
+            }
             if (undulationSampler != null) {
                 localLayerPosition += undulationSampler.getAsDouble() * undulationConfig.amplitude();
             }
@@ -127,14 +152,46 @@ public record LithomeStrataRuleSource(
             final long flooredPosition = (long) Math.floor(localLayerPosition);
             final int positionInPeriod = (int) Math.floorMod(flooredPosition, (long) period);
             final int searchedThickness = positionInPeriod + 1;
-
             int layerIndex = Arrays.binarySearch(cumulativeThickness, searchedThickness);
             if (layerIndex < 0) {
                 layerIndex = -layerIndex - 1;
             }
-
             return boundRules[layerIndex].tryApply();
         };
+    }
+
+    private static DoubleSupplier createLinearGradientSampler(
+            final LithomeVolumeRules.Context context,
+            final LinearGradient config
+    ) {
+        if (config == null || config.risePerBlock() == 0.0D) {
+            return null;
+        }
+
+        final double directionRadians = Math.toRadians(config.directionDegrees());
+        final double directionX = snapCardinalComponent(Math.cos(directionRadians));
+        final double directionZ = snapCardinalComponent(Math.sin(directionRadians));
+        final double riseX = directionX * config.risePerBlock();
+        final double riseZ = directionZ * config.risePerBlock();
+
+        return new DoubleSupplier() {
+            private long sampledAtXZ = Long.MIN_VALUE;
+            private double value;
+
+            @Override
+            public double getAsDouble() {
+                final long currentUpdateId = context.xzUpdateId();
+                if (this.sampledAtXZ != currentUpdateId) {
+                    this.value = context.blockX() * riseX + context.blockZ() * riseZ;
+                    this.sampledAtXZ = currentUpdateId;
+                }
+                return this.value;
+            }
+        };
+    }
+
+    private static double snapCardinalComponent(final double value) {
+        return Math.abs(value) < 1.0E-12D ? 0.0D : value;
     }
 
     private static DataResult<List<Layer>> validateLayers(final List<Layer> layers) {
@@ -149,21 +206,65 @@ public record LithomeStrataRuleSource(
                 return DataResult.error(() -> "The total strata thickness exceeds the supported integer range");
             }
         }
-
         return DataResult.success(List.copyOf(layers));
     }
 
+    /**
+     * 水平线性层位梯度。direction 使用角度：0 指向 +X，90 指向 +Z。
+     * rise_per_block 为沿该方向每水平前进一格时层面的垂直变化量；
+     * 正值表示层面抬升，负值表示层面沉降。
+     */
+    public record LinearGradient(
+            double directionDegrees,
+            double risePerBlock
+    ) {
+        private static final Codec<Double> FINITE_DOUBLE_CODEC = Codec.DOUBLE.validate(value ->
+                Double.isFinite(value)
+                        ? DataResult.success(value)
+                        : DataResult.error(() -> "A strata linear gradient value must be finite")
+        );
+
+        private static final Codec<LinearGradient> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                FINITE_DOUBLE_CODEC
+                        .fieldOf("direction")
+                        .forGetter(LinearGradient::directionDegrees),
+                FINITE_DOUBLE_CODEC
+                        .validate(value -> Math.abs(value) <= 1024.0D
+                                ? DataResult.success(value)
+                                : DataResult.error(() -> "Strata rise_per_block must be between -1024 and 1024"))
+                        .fieldOf("rise_per_block")
+                        .forGetter(LinearGradient::risePerBlock)
+        ).apply(instance, LinearGradient::new));
+
+        public LinearGradient {
+            if (!Double.isFinite(directionDegrees)) {
+                throw new IllegalArgumentException("directionDegrees must be finite");
+            }
+            if (!Double.isFinite(risePerBlock) || Math.abs(risePerBlock) > 1024.0D) {
+                throw new IllegalArgumentException("risePerBlock must be finite and between -1024 and 1024");
+            }
+
+            directionDegrees %= 360.0D;
+            if (directionDegrees < 0.0D) {
+                directionDegrees += 360.0D;
+            }
+            if (directionDegrees == -0.0D) {
+                directionDegrees = 0.0D;
+            }
+        }
+    }
+
     public record NoiseOffset(
-        ResourceKey<NormalNoise.NoiseParameters> noise,
-        double amplitude
+            ResourceKey<NormalNoise.NoiseParameters> noise,
+            double amplitude
     ) {
         private static final Codec<NoiseOffset> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            ResourceKey.codec(Registries.NOISE)
-                .fieldOf("noise")
-                .forGetter(NoiseOffset::noise),
-            Codec.doubleRange(0.0D, 1024.0D)
-                .fieldOf("amplitude")
-                .forGetter(NoiseOffset::amplitude)
+                ResourceKey.codec(Registries.NOISE)
+                        .fieldOf("noise")
+                        .forGetter(NoiseOffset::noise),
+                Codec.doubleRange(0.0D, 1024.0D)
+                        .fieldOf("amplitude")
+                        .forGetter(NoiseOffset::amplitude)
         ).apply(instance, NoiseOffset::new));
 
         public NoiseOffset {
@@ -172,16 +273,16 @@ public record LithomeStrataRuleSource(
     }
 
     public record Layer(
-        int thickness,
-        LithomeVolumeRules.RuleSource rule
+            int thickness,
+            LithomeVolumeRules.RuleSource rule
     ) {
         private static final Codec<Layer> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.intRange(1, 1_000_000)
-                .fieldOf("thickness")
-                .forGetter(Layer::thickness),
-            LithomeVolumeRules.RuleSource.CODEC
-                .fieldOf("rule")
-                .forGetter(Layer::rule)
+                Codec.intRange(1, 1_000_000)
+                        .fieldOf("thickness")
+                        .forGetter(Layer::thickness),
+                LithomeVolumeRules.RuleSource.CODEC
+                        .fieldOf("rule")
+                        .forGetter(Layer::rule)
         ).apply(instance, Layer::new));
 
         public Layer {
